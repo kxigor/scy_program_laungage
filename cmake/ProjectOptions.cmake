@@ -26,6 +26,7 @@ set(GCC_BASE_COMPILE
   -Wall -Wextra -Wpedantic # Standard, recommended warnings
   -fPIE                    # Position Independent Executable (Security)
   -fstack-protector-strong # Basic Stack Overflow protection (Security)
+  -DUNIT_TESTS
 )
 
 # Aggressive flags: Enables maximal strictness, used primarily for Debug/CI builds
