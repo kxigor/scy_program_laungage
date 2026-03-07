@@ -1,0 +1,3 @@
+[submodule "third_party/LRK"]
+	path = third_party/LRK
+	url = git@github.com:kxigor/LRk-parser.git

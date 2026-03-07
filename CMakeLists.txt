@@ -38,7 +38,12 @@ include(ProjectSanitizers)
 include(ProjectCoverage)
 
 # =========================================================
-# 3. SUBDIRECTORIES
+# 3. SUBPROJECTS
+# =========================================================
+add_subdirectory(third_party/LRK)
+
+# =========================================================
+# 4. SUBDIRECTORIES
 # =========================================================
 add_subdirectory(src)
 add_subdirectory(app)
