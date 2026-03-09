@@ -1,0 +1,13 @@
+Test project /home/garik/COURSES/C_with_templates/build/dev-debug-asan
+    Start 1: FormatCheck
+1/4 Test #1: FormatCheck ......................   Passed    0.18 sec
+    Start 2: TidyCheck
+2/4 Test #2: TidyCheck ........................   Passed   12.55 sec
+    Start 3: BasicLexerTest
+3/4 Test #3: BasicLexerTest ...................   Passed    0.01 sec
+    Start 4: BasicParserTest
+4/4 Test #4: BasicParserTest ..................   Passed    0.01 sec
+
+100% tests passed, 0 tests failed out of 4
+
+Total Test time (real) =  12.75 sec

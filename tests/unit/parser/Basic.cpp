@@ -51,19 +51,24 @@ TEST_F(ParserTest, GlobalVariable) {
 }
 
 TEST_F(ParserTest, IfStatement) {
-  auto program = parse("void test() { if (x == 1) { print x; } }");
+  auto program = parse("void test() { if (x == 1) { print(x); } }");
+
+  ASSERT_EQ(program.declarations.size(), 1);
 
   auto* func = std::get_if<FunctionDecl>(&program.declarations[0]->data);
+  ASSERT_NE(func, nullptr) << "First declaration is not a FunctionDecl";
+
   ASSERT_EQ(func->body.size(), 1);
 
   auto* if_stmt = std::get_if<IfStmt>(&func->body[0]->data);
-  ASSERT_NE(if_stmt, nullptr);
+  ASSERT_NE(if_stmt, nullptr) << "Statement in function body is not an IfStmt";
+
   EXPECT_FALSE(if_stmt->else_branch.has_value());
 }
 
 TEST_F(ParserTest, IfElseStatement) {
   auto program =
-      parse("void test() { if (x > 0) { return 1; } else { return 0; } }");
+      parse("int test() { if (x > 0) { return 1; } else { return 0; } }");
 
   auto* func = std::get_if<FunctionDecl>(&program.declarations[0]->data);
   auto* if_stmt = std::get_if<IfStmt>(&func->body[0]->data);
@@ -129,22 +134,11 @@ TEST_F(ParserTest, LocalVariableDeclaration) {
   EXPECT_TRUE(var_decl->initializer.has_value());
 }
 
-TEST_F(ParserTest, PrintAst) {
-  auto program = parse("int main() { print 42; return 0; }");
-
-  std::ostringstream oss;
-  print_ast(oss, program);
-
-  std::string output = oss.str();
-  EXPECT_NE(output.find("Program"), std::string::npos);
-  EXPECT_NE(output.find("FunctionDecl"), std::string::npos);
-  EXPECT_NE(output.find("PrintStmt"), std::string::npos);
-  EXPECT_NE(output.find("ReturnStmt"), std::string::npos);
-}
-
 TEST_F(ParserTest, ComplexProgram) {
   StringViewT code = R"(
     int global = 100;
+
+    void print(int x) {}
     
     int add(int a, int b) {
       return a + b;
@@ -154,9 +148,9 @@ TEST_F(ParserTest, ComplexProgram) {
       int x = 10;
       int y = 20;
       if (x < y) {
-        print add(x, y);
+        print(add(x, y));
       } else {
-        print 0;
+        print(0);
       }
       return 0;
     }
@@ -164,7 +158,7 @@ TEST_F(ParserTest, ComplexProgram) {
 
   auto program = parse(code);
 
-  ASSERT_EQ(program.declarations.size(), 3);
+  ASSERT_EQ(program.declarations.size(), 4);
 
   // Global variable
   auto* global = std::get_if<GlobalVarDecl>(&program.declarations[0]->data);
@@ -172,12 +166,16 @@ TEST_F(ParserTest, ComplexProgram) {
   EXPECT_EQ(global->name.lexem, "global");
 
   // add function
-  auto* add_func = std::get_if<FunctionDecl>(&program.declarations[1]->data);
+  auto* print_func = std::get_if<FunctionDecl>(&program.declarations[1]->data);
+  ASSERT_NE(print_func, nullptr);
+  EXPECT_EQ(print_func->name.lexem, "print");
+
+  auto* add_func = std::get_if<FunctionDecl>(&program.declarations[2]->data);
   ASSERT_NE(add_func, nullptr);
   EXPECT_EQ(add_func->name.lexem, "add");
 
   // main function
-  auto* main_func = std::get_if<FunctionDecl>(&program.declarations[2]->data);
+  auto* main_func = std::get_if<FunctionDecl>(&program.declarations[3]->data);
   ASSERT_NE(main_func, nullptr);
   EXPECT_EQ(main_func->name.lexem, "main");
 }

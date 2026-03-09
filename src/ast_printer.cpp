@@ -9,7 +9,9 @@ namespace scy {
 
 namespace {
 
-auto indent_str(std::size_t indent) { return StringT(indent * 2, ' '); }
+auto indent_str(int indent) {
+  return StringT(static_cast<std::size_t>(indent) * 2, ' ');
+}
 
 }  // namespace
 
