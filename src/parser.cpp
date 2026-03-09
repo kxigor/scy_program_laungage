@@ -30,8 +30,8 @@ DeclPtr Parser::declaration() {
     throw error(peek(), "Expected type (int/void)");
   }
 
-  const Token kType = advance();
-  const Token kName = consume(TokenType::Identifier, "Expected identifier");
+  const auto kType = advance();
+  const auto kName = consume(TokenType::Identifier, "Expected identifier");
 
   if (match(TokenType::LParen)) {
     return function_declaration(kType, kName);
@@ -48,8 +48,8 @@ DeclPtr Parser::function_declaration(Token type, Token name) {
       if (not is_type_token()) {
         throw error(peek(), "Expected parameter type");
       }
-      const Token kParamType = advance();
-      const Token kParamName =
+      const auto kParamType = advance();
+      const auto kParamName =
           consume(TokenType::Identifier, "Expected parameter name");
       params.emplace_back(kParamType, kParamName);
     } while (match(TokenType::Comma));
@@ -123,13 +123,13 @@ StmtPtr Parser::statement() {
 }
 
 StmtPtr Parser::if_statement() {
-  const SourceLocation kLocation = previous().location;
+  const auto kLocation = previous().location;
 
   consume(TokenType::LParen, "Expected '(' after 'if'");
-  ExprPtr condition = expression();
+  auto condition = expression();
   consume(TokenType::RParen, "Expected ')' after condition");
 
-  StmtPtr then_branch = statement();
+  auto then_branch = statement();
   OptionalT<StmtPtr> else_branch;
 
   if (match(TokenType::Else)) {
@@ -151,7 +151,7 @@ StmtPtr Parser::if_statement() {
 }
 
 StmtPtr Parser::return_statement() {
-  const Token kKeyword = previous();
+  const auto kKeyword = previous();
   OptionalT<ExprPtr> value;
 
   if (not check(TokenType::Semicolon)) {
@@ -174,8 +174,8 @@ StmtPtr Parser::return_statement() {
 }
 
 StmtPtr Parser::print_statement() {
-  const SourceLocation kLocation = previous().location;
-  ExprPtr value = expression();
+  const auto kLocation = previous().location;
+  auto value = expression();
   consume(TokenType::Semicolon, "Expected ';' after print");
 
   // clang-format off
@@ -191,7 +191,7 @@ StmtPtr Parser::print_statement() {
 }
 
 StmtPtr Parser::block_statement() {
-  const SourceLocation kLocation = previous().location;
+  const auto kLocation = previous().location;
   VectorT<StmtPtr> statements;
 
   while (!check(TokenType::RBrace) && !is_at_end()) {
@@ -213,8 +213,8 @@ StmtPtr Parser::block_statement() {
 }
 
 StmtPtr Parser::expression_statement() {
-  const SourceLocation kLocation = peek().location;
-  ExprPtr expr = expression();
+  const auto kLocation = peek().location;
+  auto expr = expression();
   consume(TokenType::Semicolon, "Expected ';' after expression");
 
   // clang-format off
@@ -230,8 +230,8 @@ StmtPtr Parser::expression_statement() {
 }
 
 StmtPtr Parser::var_decl_statement() {
-  const Token kType = advance();
-  const Token kName = consume(TokenType::Identifier, "Expected variable name");
+  const auto kType = advance();
+  const auto kName = consume(TokenType::Identifier, "Expected variable name");
 
   OptionalT<ExprPtr> initializer;
   if (match(TokenType::Assign)) {
@@ -257,13 +257,13 @@ StmtPtr Parser::var_decl_statement() {
 ExprPtr Parser::expression() { return assignment(); }
 
 ExprPtr Parser::assignment() {
-  ExprPtr expr = equality();
+  auto expr = equality();
 
   if (match(TokenType::Assign)) {
-    const Token kEquals = previous();
+    const auto kEquals = previous();
 
     if (auto* ident = std::get_if<IdentifierExpr>(&expr->data)) {
-      ExprPtr value = assignment();
+      auto value = assignment();
       return make_unique<Expression>(
           AssignExpr{.name = ident->name, .value = std::move(value)},
           ident->name.location);
@@ -276,11 +276,11 @@ ExprPtr Parser::assignment() {
 }
 
 ExprPtr Parser::equality() {
-  ExprPtr expr = comparison();
+  auto expr = comparison();
 
   while (match(TokenType::Equal, TokenType::NotEqual)) {
-    const Token kOp = previous();
-    ExprPtr right = comparison();
+    const auto kOp = previous();
+    auto right = comparison();
     expr = make_unique<Expression>(
         BinaryExpr{
             .left = std::move(expr), .op = kOp, .right = std::move(right)},
@@ -291,11 +291,11 @@ ExprPtr Parser::equality() {
 }
 
 ExprPtr Parser::comparison() {
-  ExprPtr expr = term();
+  auto expr = term();
 
   while (match(TokenType::Less, TokenType::Greater)) {
-    const Token kOp = previous();
-    ExprPtr right = term();
+    const auto kOp = previous();
+    auto right = term();
     expr = make_unique<Expression>(
         BinaryExpr{
             .left = std::move(expr), .op = kOp, .right = std::move(right)},
@@ -306,11 +306,11 @@ ExprPtr Parser::comparison() {
 }
 
 ExprPtr Parser::term() {
-  ExprPtr expr = unary();
+  auto expr = unary();
 
   while (match(TokenType::Plus, TokenType::Minus)) {
-    const Token kOp = previous();
-    ExprPtr right = unary();
+    const auto kOp = previous();
+    auto right = unary();
     expr = make_unique<Expression>(
         BinaryExpr{
             .left = std::move(expr), .op = kOp, .right = std::move(right)},
@@ -322,8 +322,8 @@ ExprPtr Parser::term() {
 
 ExprPtr Parser::unary() {
   if (match(TokenType::Not, TokenType::Minus)) {
-    const Token kOp = previous();
-    ExprPtr operand = unary();
+    const auto kOp = previous();
+    auto operand = unary();
     return make_unique<Expression>(
         UnaryExpr{.op = kOp, .operand = std::move(operand)}, kOp.location);
   }
@@ -333,13 +333,13 @@ ExprPtr Parser::unary() {
 
 ExprPtr Parser::primary() {
   if (match(TokenType::Number)) {
-    const Token kToken = previous();
+    const auto kToken = previous();
     return make_unique<Expression>(NumberExpr{.value = kToken},
                                    kToken.location);
   }
 
   if (match(TokenType::Identifier)) {
-    const Token kName = previous();
+    const auto kName = previous();
 
     if (match(TokenType::LParen)) {
       return call(kName);
@@ -350,8 +350,8 @@ ExprPtr Parser::primary() {
   }
 
   if (match(TokenType::LParen)) {
-    const SourceLocation kLocation = previous().location;
-    ExprPtr expr = expression();
+    const auto kLocation = previous().location;
+    auto expr = expression();
     consume(TokenType::RParen, "Expected ')' after expression");
     return make_unique<Expression>(GroupingExpr{.expression = std::move(expr)},
                                    kLocation);
