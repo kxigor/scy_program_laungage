@@ -21,8 +21,8 @@ int sum_of_two(int a, int b) {
 }
 
 void printer() {
-  print 1 + 5;
-  print sum_of_two(1, 5);
+  print(1 + 5);
+  print(sum_of_two(1, 5));
 }
 
 int main() {
