@@ -151,7 +151,7 @@ Token Lexer::next_token() {
         advance();
         return make_token(TokenType::NotEqual);
       }
-      break;
+      return make_token(TokenType::Not);
     default:
       break;
   }

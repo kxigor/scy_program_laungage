@@ -21,6 +21,7 @@ enum class TokenType : std::uint8_t {
   Number,  
 
   /*======================== Operators =========================*/
+  /* !  */ Not,
   /* == */ Equal,
   /* != */ NotEqual,
   /* <  */ Less,
