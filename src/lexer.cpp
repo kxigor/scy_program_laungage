@@ -12,7 +12,6 @@ const UmapT<StringViewT, TokenType> kKeywordsMap = {
     {"else",    TokenType::Else   },
     {"void",    TokenType::Void   },
     {"int",     TokenType::Int    },
-    {"print",   TokenType::Print  },
     {"return",  TokenType::Return }
 };
 // clang-format on

@@ -6,6 +6,8 @@
 
 int main() {
   const char* program_code = R"(
+void print(int x) {}
+
 int sum_of_two(int a, int b) {
   return a + b;
 }
@@ -28,13 +30,13 @@ int main() {
   b = c + a;
   c = a + b;
   if (a > 5) {
-    print a;
+    print(a);
     if (b > 8) {
-      print b;
+      print(b);
       if(c > 11) {
-        print c;
+        print(c);
         if(a + b + c > 50) {
-          print 666;
+          print(666);
         }
       }
     }

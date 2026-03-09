@@ -47,18 +47,17 @@ TEST_F(LexerTest, CompositeOperators) {
 }
 
 TEST_F(LexerTest, IdentifiersAndKeywords) {
-  Lexer lexer("if else void int print return _myVar var123 if_not_keyword");
+  Lexer lexer("if else void int return _myVar var123 if_not_keyword");
   auto tokens = lexer.tokenize();
 
   AssertToken(tokens[0], TokenType::If, "if", 1, 1);
   AssertToken(tokens[1], TokenType::Else, "else", 1, 4);
   AssertToken(tokens[2], TokenType::Void, "void", 1, 9);
   AssertToken(tokens[3], TokenType::Int, "int", 1, 14);
-  AssertToken(tokens[4], TokenType::Print, "print", 1, 18);
-  AssertToken(tokens[5], TokenType::Return, "return", 1, 24);
-  AssertToken(tokens[6], TokenType::Identifier, "_myVar", 1, 31);
-  AssertToken(tokens[7], TokenType::Identifier, "var123", 1, 38);
-  AssertToken(tokens[8], TokenType::Identifier, "if_not_keyword", 1, 45);
+  AssertToken(tokens[4], TokenType::Return, "return", 1, 18);
+  AssertToken(tokens[5], TokenType::Identifier, "_myVar", 1, 25);
+  AssertToken(tokens[6], TokenType::Identifier, "var123", 1, 32);
+  AssertToken(tokens[7], TokenType::Identifier, "if_not_keyword", 1, 39);
 }
 
 TEST_F(LexerTest, Numbers) {

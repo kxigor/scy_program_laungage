@@ -110,9 +110,6 @@ StmtPtr Parser::statement() {
   if (match(TokenType::Return)) {
     return return_statement();
   }
-  if (match(TokenType::Print)) {
-    return print_statement();
-  }
   if (match(TokenType::LBrace)) {
     return block_statement();
   }
@@ -169,23 +166,6 @@ StmtPtr Parser::return_statement() {
     },
   /*.location = */
     kKeyword.location
-  );
-  // clang-format on
-}
-
-StmtPtr Parser::print_statement() {
-  const auto kLocation = previous().location;
-  auto value = expression();
-  consume(TokenType::Semicolon, "Expected ';' after print");
-
-  // clang-format off
-  return make_unique<Statement>(
-  /*.data = */
-    PrintStmt{
-      .expression = std::move(value)
-    }, 
-  /*.location = */
-    kLocation
   );
   // clang-format on
 }
@@ -440,7 +420,6 @@ void Parser::synchronize() {
       case TokenType::Void:
       case TokenType::If:
       case TokenType::Return:
-      case TokenType::Print:
         return;
       default:
         break;

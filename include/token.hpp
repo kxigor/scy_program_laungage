@@ -13,7 +13,6 @@ enum class TokenType : std::uint8_t {
   Else, 
   Void, 
   Int, 
-  Print, 
   Return,
 
   /*========================= Identity =========================*/
