@@ -1,4 +1,11 @@
+#include <cstddef>
+#include <include/ast.hpp>
 #include <include/ast_visualizer.hpp>
+#include <include/config.hpp>
+#include <ostream>
+#include <string>
+#include <type_traits>
+#include <variant>
 
 namespace scy {
 
@@ -14,14 +21,14 @@ void AstVisualizer::generate_dot(const Program& program) {
 
 std::size_t AstVisualizer::next_id() { return id_counter_++; }
 
-void AstVisualizer::add_node(std::size_t id, const std::string& label,
-                             const std::string& shape) {
+void AstVisualizer::add_node(std::size_t id, const StringT& label,
+                             const StringT& shape) {
   os_ << "  node" << id << " [label=\"" << label << "\", shape=" << shape
       << "];\n";
 }
 
 void AstVisualizer::add_edge(std::size_t from, std::size_t to,
-                             const std::string& label) {
+                             const StringT& label) {
   os_ << "  node" << from << " -> node" << to;
   if (!label.empty()) {
     os_ << " [label=\"" << label << "\"]";
@@ -30,15 +37,15 @@ void AstVisualizer::add_edge(std::size_t from, std::size_t to,
 }
 
 std::size_t AstVisualizer::visit_program(const Program& program) {
-  std::size_t id = next_id();
-  add_node(id, "Program", "ellipse");
+  const std::size_t kId = next_id();
+  add_node(kId, "Program", "ellipse");
 
   for (const auto& decl : program.declarations) {
-    std::size_t child_id = visit_declaration(*decl);
-    add_edge(id, child_id);
+    const std::size_t kChildId = visit_declaration(*decl);
+    add_edge(kId, kChildId);
   }
 
-  return id;
+  return kId;
 }
 
 std::size_t AstVisualizer::visit_declaration(const Declaration& decl) {
@@ -47,37 +54,38 @@ std::size_t AstVisualizer::visit_declaration(const Declaration& decl) {
         using T = std::decay_t<decltype(arg)>;
 
         if constexpr (std::is_same_v<T, FunctionDecl>) {
-          std::size_t id = next_id();
-          std::string label = "Function\\n" +
-                              std::string(arg.return_type.lexem) + " " +
-                              std::string(arg.name.lexem) + "(";
+          const std::size_t kId = next_id();
+          StringT label = "Function\\n" + StringT(arg.return_type.lexem) + " " +
+                          StringT(arg.name.lexem) + "(";
           for (std::size_t i = 0; i < arg.params.size(); ++i) {
-            if (i > 0) label += ", ";
-            label += std::string(arg.params[i].type.lexem) + " " +
-                     std::string(arg.params[i].name.lexem);
+            if (i > 0) {
+              label += ", ";
+            }
+            label += StringT(arg.params[i].type.lexem) + " " +
+                     StringT(arg.params[i].name.lexem);
           }
           label += ")";
-          add_node(id, label, "box");
+          add_node(kId, label, "box");
 
           for (const auto& stmt : arg.body) {
-            std::size_t child_id = visit_statement(*stmt);
-            add_edge(id, child_id);
+            const std::size_t kChildId = visit_statement(*stmt);
+            add_edge(kId, kChildId);
           }
 
-          return id;
+          return kId;
 
         } else if constexpr (std::is_same_v<T, GlobalVarDecl>) {
-          std::size_t id = next_id();
-          std::string label = "GlobalVar\\n" + std::string(arg.type.lexem) +
-                              " " + std::string(arg.name.lexem);
-          add_node(id, label, "box");
+          const std::size_t kId = next_id();
+          const StringT kLabel = "GlobalVar\\n" + StringT(arg.type.lexem) +
+                                 " " + StringT(arg.name.lexem);
+          add_node(kId, kLabel, "box");
 
           if (arg.initializer) {
-            std::size_t init_id = visit_expression(**arg.initializer);
-            add_edge(id, init_id, "init");
+            const std::size_t kInitId = visit_expression(**arg.initializer);
+            add_edge(kId, kInitId, "init");
           }
 
-          return id;
+          return kId;
         }
 
         return 0;
@@ -91,66 +99,66 @@ std::size_t AstVisualizer::visit_statement(const Statement& stmt) {
         using T = std::decay_t<decltype(arg)>;
 
         if constexpr (std::is_same_v<T, ExpressionStmt>) {
-          std::size_t id = next_id();
-          add_node(id, "ExprStmt", "box");
-          std::size_t expr_id = visit_expression(*arg.expression);
-          add_edge(id, expr_id);
-          return id;
+          const std::size_t kId = next_id();
+          add_node(kId, "ExprStmt", "box");
+          const std::size_t kExprId = visit_expression(*arg.expression);
+          add_edge(kId, kExprId);
+          return kId;
 
         } else if constexpr (std::is_same_v<T, PrintStmt>) {
-          std::size_t id = next_id();
-          add_node(id, "Print", "box");
-          std::size_t expr_id = visit_expression(*arg.expression);
-          add_edge(id, expr_id);
-          return id;
+          const std::size_t kId = next_id();
+          add_node(kId, "Print", "box");
+          const std::size_t kExprId = visit_expression(*arg.expression);
+          add_edge(kId, kExprId);
+          return kId;
 
         } else if constexpr (std::is_same_v<T, ReturnStmt>) {
-          std::size_t id = next_id();
-          add_node(id, "Return", "box");
+          const std::size_t kId = next_id();
+          add_node(kId, "Return", "box");
           if (arg.value) {
-            std::size_t val_id = visit_expression(**arg.value);
-            add_edge(id, val_id);
+            const std::size_t kValId = visit_expression(**arg.value);
+            add_edge(kId, kValId);
           }
-          return id;
+          return kId;
 
         } else if constexpr (std::is_same_v<T, BlockStmt>) {
-          std::size_t id = next_id();
-          add_node(id, "Block", "box");
+          const std::size_t kId = next_id();
+          add_node(kId, "Block", "box");
           for (const auto& s : arg.statements) {
-            std::size_t child_id = visit_statement(*s);
-            add_edge(id, child_id);
+            const std::size_t kChildId = visit_statement(*s);
+            add_edge(kId, kChildId);
           }
-          return id;
+          return kId;
 
         } else if constexpr (std::is_same_v<T, IfStmt>) {
-          std::size_t id = next_id();
-          add_node(id, "If", "diamond");
+          const std::size_t kId = next_id();
+          add_node(kId, "If", "diamond");
 
-          std::size_t cond_id = visit_expression(*arg.condition);
-          add_edge(id, cond_id, "cond");
+          const std::size_t kCondId = visit_expression(*arg.condition);
+          add_edge(kId, kCondId, "cond");
 
-          std::size_t then_id = visit_statement(*arg.then_branch);
-          add_edge(id, then_id, "then");
+          const std::size_t kThenId = visit_statement(*arg.then_branch);
+          add_edge(kId, kThenId, "then");
 
           if (arg.else_branch) {
-            std::size_t else_id = visit_statement(**arg.else_branch);
-            add_edge(id, else_id, "else");
+            const std::size_t kElseId = visit_statement(**arg.else_branch);
+            add_edge(kId, kElseId, "else");
           }
 
-          return id;
+          return kId;
 
         } else if constexpr (std::is_same_v<T, VarDeclStmt>) {
-          std::size_t id = next_id();
-          std::string label = "VarDecl\\n" + std::string(arg.type.lexem) + " " +
-                              std::string(arg.name.lexem);
-          add_node(id, label, "box");
+          const std::size_t kId = next_id();
+          const StringT kLabel = "VarDecl\\n" + StringT(arg.type.lexem) + " " +
+                                 StringT(arg.name.lexem);
+          add_node(kId, kLabel, "box");
 
           if (arg.initializer) {
-            std::size_t init_id = visit_expression(**arg.initializer);
-            add_edge(id, init_id, "init");
+            const std::size_t kInitId = visit_expression(**arg.initializer);
+            add_edge(kId, kInitId, "init");
           }
 
-          return id;
+          return kId;
         }
 
         return 0;
@@ -164,61 +172,61 @@ std::size_t AstVisualizer::visit_expression(const Expression& expr) {
         using T = std::decay_t<decltype(arg)>;
 
         if constexpr (std::is_same_v<T, NumberExpr>) {
-          std::size_t id = next_id();
-          add_node(id, std::string(arg.value.lexem), "ellipse");
-          return id;
+          const std::size_t kId = next_id();
+          add_node(kId, StringT(arg.value.lexem), "ellipse");
+          return kId;
 
         } else if constexpr (std::is_same_v<T, IdentifierExpr>) {
-          std::size_t id = next_id();
-          add_node(id, std::string(arg.name.lexem), "ellipse");
-          return id;
+          const std::size_t kId = next_id();
+          add_node(kId, StringT(arg.name.lexem), "ellipse");
+          return kId;
 
         } else if constexpr (std::is_same_v<T, UnaryExpr>) {
-          std::size_t id = next_id();
-          add_node(id, "Unary " + std::string(arg.op.lexem), "circle");
-          std::size_t operand_id = visit_expression(*arg.operand);
-          add_edge(id, operand_id);
-          return id;
+          const std::size_t kId = next_id();
+          add_node(kId, "Unary " + StringT(arg.op.lexem), "circle");
+          const std::size_t kOperandId = visit_expression(*arg.operand);
+          add_edge(kId, kOperandId);
+          return kId;
 
         } else if constexpr (std::is_same_v<T, BinaryExpr>) {
-          std::size_t id = next_id();
-          add_node(id, std::string(arg.op.lexem), "circle");
-          std::size_t left_id = visit_expression(*arg.left);
-          std::size_t right_id = visit_expression(*arg.right);
-          add_edge(id, left_id, "L");
-          add_edge(id, right_id, "R");
-          return id;
+          const std::size_t kId = next_id();
+          add_node(kId, StringT(arg.op.lexem), "circle");
+          const std::size_t kLeftId = visit_expression(*arg.left);
+          const std::size_t kRightId = visit_expression(*arg.right);
+          add_edge(kId, kLeftId, "L");
+          add_edge(kId, kRightId, "R");
+          return kId;
 
         } else if constexpr (std::is_same_v<T, AssignExpr>) {
-          std::size_t id = next_id();
-          add_node(id, "Assign", "circle");
+          const std::size_t kId = next_id();
+          add_node(kId, "Assign", "circle");
 
-          std::size_t name_id = next_id();
-          add_node(name_id, std::string(arg.name.lexem), "ellipse");
-          add_edge(id, name_id, "target");
+          const std::size_t kNameId = next_id();
+          add_node(kNameId, StringT(arg.name.lexem), "ellipse");
+          add_edge(kId, kNameId, "target");
 
-          std::size_t val_id = visit_expression(*arg.value);
-          add_edge(id, val_id, "value");
+          const std::size_t kValId = visit_expression(*arg.value);
+          add_edge(kId, kValId, "value");
 
-          return id;
+          return kId;
 
         } else if constexpr (std::is_same_v<T, CallExpr>) {
-          std::size_t id = next_id();
-          add_node(id, "Call\\n" + std::string(arg.callee.lexem), "hexagon");
+          const std::size_t kId = next_id();
+          add_node(kId, "Call\\n" + StringT(arg.callee.lexem), "hexagon");
 
           for (std::size_t i = 0; i < arg.arguments.size(); ++i) {
-            std::size_t arg_id = visit_expression(*arg.arguments[i]);
-            add_edge(id, arg_id, "arg" + std::to_string(i));
+            const std::size_t kArgId = visit_expression(*arg.arguments[i]);
+            add_edge(kId, kArgId, "arg" + std::to_string(i));
           }
 
-          return id;
+          return kId;
 
         } else if constexpr (std::is_same_v<T, GroupingExpr>) {
-          std::size_t id = next_id();
-          add_node(id, "( )", "circle");
-          std::size_t inner_id = visit_expression(*arg.expression);
-          add_edge(id, inner_id);
-          return id;
+          const std::size_t kId = next_id();
+          add_node(kId, "( )", "circle");
+          const std::size_t kInnerId = visit_expression(*arg.expression);
+          add_edge(kId, kInnerId);
+          return kId;
         }
 
         return 0;

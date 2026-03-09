@@ -1,12 +1,15 @@
+#include <cstddef>
 #include <include/ast.hpp>
+#include <include/config.hpp>
+#include <ostream>
+#include <type_traits>
+#include <variant>
 
 namespace scy {
 
 namespace {
 
-std::string indent_str(std::size_t indent) {
-  return std::string(indent * 2, ' ');
-}
+auto indent_str(std::size_t indent) { return StringT(indent * 2, ' '); }
 
 }  // namespace
 
@@ -27,7 +30,9 @@ void print_ast(std::ostream& os, const Declaration& decl, int indent) {
              << " " << arg.name.lexem << "(";
 
           for (std::size_t i = 0; i < arg.params.size(); ++i) {
-            if (i > 0) os << ", ";
+            if (i > 0) {
+              os << ", ";
+            }
             os << arg.params[i].type.lexem << " " << arg.params[i].name.lexem;
           }
           os << ")\n";

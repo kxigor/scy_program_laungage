@@ -3,7 +3,6 @@
 #include <stdexcept>
 #include <string>
 #include <utility>
-#include <cstddef>
 
 #include "ast.hpp"
 #include "config.hpp"
@@ -66,7 +65,9 @@ class Parser {
 
   template <typename... Types>
   bool match(TokenType first, Types... rest) {
-    if (match(first)) return true;
+    if (match(first)) {
+      return true;
+    }
     return match(rest...);
   }
 
@@ -74,11 +75,11 @@ class Parser {
 
   [[nodiscard]] bool is_type_token() const noexcept;
 
-  ParseError error(const Token& token, const std::string& message);
+  static ParseError error(const Token& token, const std::string& message);
   void synchronize();
 
   VectorT<Token> tokens_;
-  std::size_t current_{0};
+  PosT current_{0};
   VectorT<ParseError> errors_;
 };
 

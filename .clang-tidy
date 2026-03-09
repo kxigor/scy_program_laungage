@@ -22,7 +22,10 @@ Checks: >
   -bugprone-easily-swappable-parameters,
   -portability-avoid-pragma-once,
   -readability-identifier-length,
-  -cppcoreguidelines-avoid-const-or-ref-data-members
+  -cppcoreguidelines-avoid-const-or-ref-data-members,
+  -llvm-prefer-static-over-anonymous-namespace,
+  -misc-no-recursion,
+  -cppcoreguidelines-avoid-do-while
 WarningsAsErrors: '*'
 
 CheckOptions:

@@ -7,8 +7,3 @@ target_link_libraries(app
     project_sanitizers
     project_coverage
 )
-
-target_include_directories(scy
-  PUBLIC
-    $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}>
-)

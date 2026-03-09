@@ -1,4 +1,10 @@
+#include <include/ast.hpp>
+#include <include/config.hpp>
 #include <include/parser.hpp>
+#include <include/token.hpp>
+#include <string>
+#include <utility>
+#include <variant>
 
 namespace scy {
 
@@ -19,20 +25,19 @@ Program Parser::parse() {
   return program;
 }
 
-/*======================= Declarations =======================*/
 DeclPtr Parser::declaration() {
   if (not is_type_token()) {
     throw error(peek(), "Expected type (int/void)");
   }
 
-  Token type = advance();
-  Token name = consume(TokenType::Identifier, "Expected identifier");
+  const Token kType = advance();
+  const Token kName = consume(TokenType::Identifier, "Expected identifier");
 
   if (match(TokenType::LParen)) {
-    return function_declaration(type, name);
+    return function_declaration(kType, kName);
   }
 
-  return variable_declaration(type, name);
+  return variable_declaration(kType, kName);
 }
 
 DeclPtr Parser::function_declaration(Token type, Token name) {
@@ -43,10 +48,10 @@ DeclPtr Parser::function_declaration(Token type, Token name) {
       if (not is_type_token()) {
         throw error(peek(), "Expected parameter type");
       }
-      Token param_type = advance();
-      Token param_name =
+      const Token kParamType = advance();
+      const Token kParamName =
           consume(TokenType::Identifier, "Expected parameter name");
-      params.push_back({param_type, param_name});
+      params.emplace_back(kParamType, kParamName);
     } while (match(TokenType::Comma));
   }
 
@@ -55,14 +60,24 @@ DeclPtr Parser::function_declaration(Token type, Token name) {
 
   VectorT<StmtPtr> body;
   while (!check(TokenType::RBrace) && !is_at_end()) {
-    body.push_back(statement());
+    body.emplace_back(statement());
   }
 
   consume(TokenType::RBrace, "Expected '}' after function body");
 
-  return MakeUnique<Declaration>(
-      FunctionDecl{type, name, std::move(params), std::move(body)},
-      type.location);
+  // clang-format off
+  return make_unique<Declaration>(
+  /*.data = */
+    FunctionDecl{
+      .return_type  = type,
+      .name         = name, 
+      .params       = std::move(params), 
+      .body         = std::move(body)
+    },
+  /*.location = */
+    type.location
+  );
+  // clang-format on
 }
 
 DeclPtr Parser::variable_declaration(Token type, Token name) {
@@ -74,11 +89,19 @@ DeclPtr Parser::variable_declaration(Token type, Token name) {
 
   consume(TokenType::Semicolon, "Expected ';' after variable declaration");
 
-  return MakeUnique<Declaration>(
-      GlobalVarDecl{type, name, std::move(initializer)}, type.location);
+  // clang-format off
+  return make_unique<Declaration>(
+  /*.data = */
+    GlobalVarDecl{
+      .type         = type, 
+      .name         = name, 
+      .initializer  = std::move(initializer)
+    }, 
+  /*.location = */
+    type.location
+  );
+  // clang-format on
 }
-
-// ==================== Statements ====================
 
 StmtPtr Parser::statement() {
   if (match(TokenType::If)) {
@@ -96,12 +119,11 @@ StmtPtr Parser::statement() {
   if (is_type_token()) {
     return var_decl_statement();
   }
-
   return expression_statement();
 }
 
 StmtPtr Parser::if_statement() {
-  SourceLocation loc = previous().location;
+  const SourceLocation kLocation = previous().location;
 
   consume(TokenType::LParen, "Expected '(' after 'if'");
   ExprPtr condition = expression();
@@ -114,14 +136,22 @@ StmtPtr Parser::if_statement() {
     else_branch = statement();
   }
 
-  return MakeUnique<Statement>(
-      IfStmt{std::move(condition), std::move(then_branch),
-             std::move(else_branch)},
-      loc);
+  // clang-format off
+  return make_unique<Statement>(
+  /*.data = */
+    IfStmt{
+      .condition    = std::move(condition), 
+      .then_branch  = std::move(then_branch),
+      .else_branch  = std::move(else_branch)
+    },
+  /*.location = */
+    kLocation
+  );
+  // clang-format on
 }
 
 StmtPtr Parser::return_statement() {
-  Token keyword = previous();
+  const Token kKeyword = previous();
   OptionalT<ExprPtr> value;
 
   if (not check(TokenType::Semicolon)) {
@@ -130,42 +160,78 @@ StmtPtr Parser::return_statement() {
 
   consume(TokenType::Semicolon, "Expected ';' after return");
 
-  return MakeUnique<Statement>(ReturnStmt{keyword, std::move(value)},
-                                     keyword.location);
+  // clang-format off
+  return make_unique<Statement>(
+  /*.data = */
+    ReturnStmt{
+      .keyword  = kKeyword, 
+      .value    = std::move(value)
+    },
+  /*.location = */
+    kKeyword.location
+  );
+  // clang-format on
 }
 
 StmtPtr Parser::print_statement() {
-  SourceLocation loc = previous().location;
+  const SourceLocation kLocation = previous().location;
   ExprPtr value = expression();
   consume(TokenType::Semicolon, "Expected ';' after print");
 
-  return MakeUnique<Statement>(PrintStmt{std::move(value)}, loc);
+  // clang-format off
+  return make_unique<Statement>(
+  /*.data = */
+    PrintStmt{
+      .expression = std::move(value)
+    }, 
+  /*.location = */
+    kLocation
+  );
+  // clang-format on
 }
 
 StmtPtr Parser::block_statement() {
-  SourceLocation loc = previous().location;
+  const SourceLocation kLocation = previous().location;
   VectorT<StmtPtr> statements;
 
   while (!check(TokenType::RBrace) && !is_at_end()) {
-    statements.push_back(statement());
+    statements.emplace_back(statement());
   }
 
   consume(TokenType::RBrace, "Expected '}' after block");
 
-  return MakeUnique<Statement>(BlockStmt{std::move(statements)}, loc);
+  // clang-format off
+  return make_unique<Statement>(
+  /*.data = */
+    BlockStmt{
+      .statements = std::move(statements)
+    }, 
+  /*.location = */
+    kLocation
+  );
+  // clang-format on
 }
 
 StmtPtr Parser::expression_statement() {
-  SourceLocation loc = peek().location;
+  const SourceLocation kLocation = peek().location;
   ExprPtr expr = expression();
   consume(TokenType::Semicolon, "Expected ';' after expression");
 
-  return MakeUnique<Statement>(ExpressionStmt{std::move(expr)}, loc);
+  // clang-format off
+  return make_unique<Statement>(
+  /*.data = */
+    ExpressionStmt{
+      .expression = std::move(expr)
+    }, 
+  /*.location = */
+    kLocation
+  );
+  // clang-format on
 }
 
 StmtPtr Parser::var_decl_statement() {
-  Token type = advance();
-  Token name = consume(TokenType::Identifier, "Expected variable name");
+  const Token kType = advance();
+  const Token kName = consume(TokenType::Identifier, "Expected variable name");
 
   OptionalT<ExprPtr> initializer;
   if (match(TokenType::Assign)) {
@@ -174,11 +240,19 @@ StmtPtr Parser::var_decl_statement() {
 
   consume(TokenType::Semicolon, "Expected ';' after variable declaration");
 
-  return MakeUnique<Statement>(
-      VarDeclStmt{type, name, std::move(initializer)}, type.location);
+  // clang-format off
+  return make_unique<Statement>(
+  /*.data = */
+    VarDeclStmt{
+      .type         = kType, 
+      .name         = kName, 
+      .initializer  = std::move(initializer)
+    },
+  /*.location = */
+    kType.location
+  );
+  // clang-format on
 }
-
-// ==================== Expressions ====================
 
 ExprPtr Parser::expression() { return assignment(); }
 
@@ -186,16 +260,16 @@ ExprPtr Parser::assignment() {
   ExprPtr expr = equality();
 
   if (match(TokenType::Assign)) {
-    Token equals = previous();
+    const Token kEquals = previous();
 
-    // Check if left side is identifier
     if (auto* ident = std::get_if<IdentifierExpr>(&expr->data)) {
       ExprPtr value = assignment();
-      return MakeUnique<Expression>(
-          AssignExpr{ident->name, std::move(value)}, ident->name.location);
+      return make_unique<Expression>(
+          AssignExpr{.name = ident->name, .value = std::move(value)},
+          ident->name.location);
     }
 
-    throw error(equals, "Invalid assignment target");
+    throw error(kEquals, "Invalid assignment target");
   }
 
   return expr;
@@ -205,10 +279,12 @@ ExprPtr Parser::equality() {
   ExprPtr expr = comparison();
 
   while (match(TokenType::Equal, TokenType::NotEqual)) {
-    Token op = previous();
+    const Token kOp = previous();
     ExprPtr right = comparison();
-    expr = MakeUnique<Expression>(
-        BinaryExpr{std::move(expr), op, std::move(right)}, op.location);
+    expr = make_unique<Expression>(
+        BinaryExpr{
+            .left = std::move(expr), .op = kOp, .right = std::move(right)},
+        kOp.location);
   }
 
   return expr;
@@ -218,10 +294,12 @@ ExprPtr Parser::comparison() {
   ExprPtr expr = term();
 
   while (match(TokenType::Less, TokenType::Greater)) {
-    Token op = previous();
+    const Token kOp = previous();
     ExprPtr right = term();
-    expr = MakeUnique<Expression>(
-        BinaryExpr{std::move(expr), op, std::move(right)}, op.location);
+    expr = make_unique<Expression>(
+        BinaryExpr{
+            .left = std::move(expr), .op = kOp, .right = std::move(right)},
+        kOp.location);
   }
 
   return expr;
@@ -231,10 +309,12 @@ ExprPtr Parser::term() {
   ExprPtr expr = unary();
 
   while (match(TokenType::Plus, TokenType::Minus)) {
-    Token op = previous();
+    const Token kOp = previous();
     ExprPtr right = unary();
-    expr = MakeUnique<Expression>(
-        BinaryExpr{std::move(expr), op, std::move(right)}, op.location);
+    expr = make_unique<Expression>(
+        BinaryExpr{
+            .left = std::move(expr), .op = kOp, .right = std::move(right)},
+        kOp.location);
   }
 
   return expr;
@@ -242,10 +322,10 @@ ExprPtr Parser::term() {
 
 ExprPtr Parser::unary() {
   if (match(TokenType::Not, TokenType::Minus)) {
-    Token op = previous();
+    const Token kOp = previous();
     ExprPtr operand = unary();
-    return MakeUnique<Expression>(UnaryExpr{op, std::move(operand)},
-                                        op.location);
+    return make_unique<Expression>(
+        UnaryExpr{.op = kOp, .operand = std::move(operand)}, kOp.location);
   }
 
   return primary();
@@ -253,26 +333,28 @@ ExprPtr Parser::unary() {
 
 ExprPtr Parser::primary() {
   if (match(TokenType::Number)) {
-    Token token = previous();
-    return MakeUnique<Expression>(NumberExpr{token}, token.location);
+    const Token kToken = previous();
+    return make_unique<Expression>(NumberExpr{.value = kToken},
+                                   kToken.location);
   }
 
   if (match(TokenType::Identifier)) {
-    Token name = previous();
+    const Token kName = previous();
 
-    // Check for function call
     if (match(TokenType::LParen)) {
-      return call(name);
+      return call(kName);
     }
 
-    return MakeUnique<Expression>(IdentifierExpr{name}, name.location);
+    return make_unique<Expression>(IdentifierExpr{.name = kName},
+                                   kName.location);
   }
 
   if (match(TokenType::LParen)) {
-    SourceLocation loc = previous().location;
+    const SourceLocation kLocation = previous().location;
     ExprPtr expr = expression();
     consume(TokenType::RParen, "Expected ')' after expression");
-    return MakeUnique<Expression>(GroupingExpr{std::move(expr)}, loc);
+    return make_unique<Expression>(GroupingExpr{.expression = std::move(expr)},
+                                   kLocation);
   }
 
   throw error(peek(), "Expected expression");
@@ -283,17 +365,16 @@ ExprPtr Parser::call(Token name) {
 
   if (not check(TokenType::RParen)) {
     do {
-      arguments.push_back(expression());
+      arguments.emplace_back(expression());
     } while (match(TokenType::Comma));
   }
 
   consume(TokenType::RParen, "Expected ')' after arguments");
 
-  return MakeUnique<Expression>(CallExpr{name, std::move(arguments)},
-                                      name.location);
+  return make_unique<Expression>(
+      CallExpr{.callee = name, .arguments = std::move(arguments)},
+      name.location);
 }
-
-// ==================== Helper Methods ====================
 
 bool Parser::is_at_end() const noexcept {
   return peek().type == TokenType::Eof;
@@ -311,7 +392,9 @@ Token Parser::advance() {
 }
 
 bool Parser::check(TokenType type) const noexcept {
-  if (is_at_end()) return false;
+  if (is_at_end()) {
+    return false;
+  }
   return peek().type == type;
 }
 
@@ -341,14 +424,16 @@ ParseError Parser::error(const Token& token, const std::string& message) {
   if (token.type != TokenType::Eof) {
     full_message += " (got '" + std::string(token.lexem) + "')";
   }
-  return ParseError(full_message, token.location);
+  return {full_message, token.location};
 }
 
 void Parser::synchronize() {
   advance();
 
   while (not is_at_end()) {
-    if (previous().type == TokenType::Semicolon) return;
+    if (previous().type == TokenType::Semicolon) {
+      return;
+    }
 
     switch (peek().type) {
       case TokenType::Int:
@@ -360,7 +445,6 @@ void Parser::synchronize() {
       default:
         break;
     }
-
     advance();
   }
 }
