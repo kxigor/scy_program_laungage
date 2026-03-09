@@ -37,7 +37,13 @@ int main() {
         print(c);
         if(a + b + c > 50) {
           print(666);
+        } else {
+          print(555);
         }
+      } else if (c < 5) {
+        print(0000);
+      } else {
+        print(123);
       }
     }
   }
