@@ -28,14 +28,15 @@ void print_ast(std::ostream& os, const Declaration& decl, int indent) {
         using T = std::decay_t<decltype(arg)>;
 
         if constexpr (std::is_same_v<T, FunctionDecl>) {
-          os << indent_str(indent) << "FunctionDecl: " << arg.return_type.lexem
-             << " " << arg.name.lexem << "(";
+          os << indent_str(indent)
+             << "FunctionDecl: " << arg.return_type.as_text() << " " << arg.name
+             << "(";
 
           for (std::size_t i = 0; i < arg.params.size(); ++i) {
             if (i > 0) {
               os << ", ";
             }
-            os << arg.params[i].type.lexem << " " << arg.params[i].name.lexem;
+            os << arg.params[i].type.as_text() << " " << arg.params[i].name;
           }
           os << ")\n";
 
@@ -44,8 +45,8 @@ void print_ast(std::ostream& os, const Declaration& decl, int indent) {
           }
 
         } else if constexpr (std::is_same_v<T, GlobalVarDecl>) {
-          os << indent_str(indent) << "GlobalVarDecl: " << arg.type.lexem << " "
-             << arg.name.lexem;
+          os << indent_str(indent) << "GlobalVarDecl: " << arg.type.as_text()
+             << " " << arg.name;
           if (arg.initializer) {
             os << " =\n";
             print_ast(os, **arg.initializer, indent + 1);
@@ -64,10 +65,6 @@ void print_ast(std::ostream& os, const Statement& stmt, int indent) {
 
         if constexpr (std::is_same_v<T, ExpressionStmt>) {
           os << indent_str(indent) << "ExpressionStmt\n";
-          print_ast(os, *arg.expression, indent + 1);
-
-        } else if constexpr (std::is_same_v<T, PrintStmt>) {
-          os << indent_str(indent) << "PrintStmt\n";
           print_ast(os, *arg.expression, indent + 1);
 
         } else if constexpr (std::is_same_v<T, ReturnStmt>) {
@@ -94,8 +91,8 @@ void print_ast(std::ostream& os, const Statement& stmt, int indent) {
           }
 
         } else if constexpr (std::is_same_v<T, VarDeclStmt>) {
-          os << indent_str(indent) << "VarDeclStmt: " << arg.type.lexem << " "
-             << arg.name.lexem;
+          os << indent_str(indent) << "VarDeclStmt: " << arg.type.as_text()
+             << " " << arg.name;
           if (arg.initializer) {
             os << " =\n";
             print_ast(os, **arg.initializer, indent + 1);
@@ -113,10 +110,10 @@ void print_ast(std::ostream& os, const Expression& expr, int indent) {
         using T = std::decay_t<decltype(arg)>;
 
         if constexpr (std::is_same_v<T, NumberExpr>) {
-          os << indent_str(indent) << "Number: " << arg.value.lexem << "\n";
+          os << indent_str(indent) << "Number: " << arg.literal << "\n";
 
         } else if constexpr (std::is_same_v<T, IdentifierExpr>) {
-          os << indent_str(indent) << "Identifier: " << arg.name.lexem << "\n";
+          os << indent_str(indent) << "Identifier: " << arg.name << "\n";
 
         } else if constexpr (std::is_same_v<T, UnaryExpr>) {
           os << indent_str(indent) << "UnaryExpr: " << arg.op.lexem << "\n";
@@ -128,11 +125,11 @@ void print_ast(std::ostream& os, const Expression& expr, int indent) {
           print_ast(os, *arg.right, indent + 1);
 
         } else if constexpr (std::is_same_v<T, AssignExpr>) {
-          os << indent_str(indent) << "AssignExpr: " << arg.name.lexem << "\n";
+          os << indent_str(indent) << "AssignExpr: " << arg.name << "\n";
           print_ast(os, *arg.value, indent + 1);
 
         } else if constexpr (std::is_same_v<T, CallExpr>) {
-          os << indent_str(indent) << "CallExpr: " << arg.callee.lexem << "\n";
+          os << indent_str(indent) << "CallExpr: " << arg.callee << "\n";
           for (const auto& a : arg.arguments) {
             print_ast(os, *a, indent + 1);
           }

@@ -20,7 +20,6 @@ unary        → '!' unary | primary
 primary      → NUMBER | IDENTIFIER | '(' expression ')' | call
 call         → IDENTIFIER '(' arguments? ')'
 arguments    → expression (',' expression)*
+IDENTIFIER   → [a-zA-Z_][a-zA-Z0-9_]*
+NUMBER       → [0-9]+
 ```
-
-Добавить IDENTIFIER
-Добавить NUMBER

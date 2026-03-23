@@ -23,7 +23,7 @@ class ParseError : public std::runtime_error {
 
 class Parser {
  public:
-  explicit Parser(VectorT<Token> tokens) : tokens_(std::move(tokens)) {}
+  explicit Parser(VectorT<LocatedToken> tokens) : tokens_(std::move(tokens)) {}
 
   Program parse();
 
@@ -35,13 +35,12 @@ class Parser {
 
  private:
   DeclPtr declaration();
-  DeclPtr function_declaration(Token type, Token name);
-  DeclPtr variable_declaration(Token type, Token name);
+  DeclPtr function_declaration(LocatedToken type, LocatedToken name);
+  DeclPtr variable_declaration(LocatedToken type, LocatedToken name);
 
   StmtPtr statement();
   StmtPtr if_statement();
   StmtPtr return_statement();
-  StmtPtr print_statement();
   StmtPtr block_statement();
   StmtPtr expression_statement();
   StmtPtr var_decl_statement();
@@ -53,12 +52,12 @@ class Parser {
   ExprPtr term();
   ExprPtr unary();
   ExprPtr primary();
-  ExprPtr call(Token name);
+  ExprPtr call(LocatedToken name);
 
   [[nodiscard]] bool is_at_end() const noexcept;
-  [[nodiscard]] Token peek() const noexcept;
-  [[nodiscard]] Token previous() const noexcept;
-  Token advance();
+  [[nodiscard]] LocatedToken peek() const noexcept;
+  [[nodiscard]] LocatedToken previous() const noexcept;
+  LocatedToken advance();
 
   [[nodiscard]] bool check(TokenType type) const noexcept;
   bool match(TokenType type);
@@ -71,14 +70,15 @@ class Parser {
     return match(rest...);
   }
 
-  Token consume(TokenType type, const std::string& message);
+  LocatedToken consume(TokenType type, const std::string& message);
 
   [[nodiscard]] bool is_type_token() const noexcept;
 
-  static ParseError error(const Token& token, const std::string& message);
+  static ParseError error(const LocatedToken& token,
+                          const std::string& message);
   void synchronize();
 
-  VectorT<Token> tokens_;
+  VectorT<LocatedToken> tokens_;
   PosT current_{0};
   VectorT<ParseError> errors_;
 };

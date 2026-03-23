@@ -25,7 +25,10 @@ Checks: >
   -cppcoreguidelines-avoid-const-or-ref-data-members,
   -llvm-prefer-static-over-anonymous-namespace,
   -misc-no-recursion,
-  -cppcoreguidelines-avoid-do-while
+  -cppcoreguidelines-avoid-do-while,
+  -misc-non-private-member-variables-in-classes,
+  -hicpp-move-const-arg,
+  -performance-move-const-arg
 WarningsAsErrors: '*'
 
 CheckOptions:

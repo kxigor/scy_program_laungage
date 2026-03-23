@@ -9,7 +9,7 @@ class Lexer {
  public:
   explicit Lexer(StringViewT source) : source_(source) {}
 
-  VectorT<Token> tokenize();
+  VectorT<LocatedToken> tokenize();
 
  private:
   [[nodiscard]] bool is_at_end() const noexcept;
@@ -19,11 +19,11 @@ class Lexer {
 
   void skip_whitespace() noexcept;
 
-  Token next_token();
-  Token make_token(TokenType type);
+  LocatedToken next_token();
+  LocatedToken make_token(TokenType type);
 
-  Token number();
-  Token identifier();
+  LocatedToken number();
+  LocatedToken identifier();
 
   StringViewT source_;
 

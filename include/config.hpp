@@ -37,4 +37,14 @@ UniquePtrT<T> make_unique(Args&&... args) {
 template <typename... Args>
 using VariantT = std::variant<Args...>;
 
+struct SourceLocation {
+  PosT line{};
+  PosT column{};
+};
+
+struct LocatedName {
+  StringViewT text;
+  SourceLocation laction;
+};
+
 }  // namespace scy

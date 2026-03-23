@@ -1,6 +1,8 @@
 add_library(scy
   lexer.cpp
   parser.cpp
+  ast.cpp
+  type.cpp
   ast_visualizer.cpp
   ast_printer.cpp
 )

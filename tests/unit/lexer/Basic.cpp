@@ -6,13 +6,13 @@ namespace scy::test {
 
 class LexerTest : public ::testing::Test {
  protected:
-  void AssertToken(const Token& token, TokenType expected_type,
+  void AssertToken(const LocatedToken& located, TokenType expected_type,
                    StringViewT expected_lexem, uint32_t line, uint32_t col) {
-    EXPECT_EQ(token.type, expected_type)
+    EXPECT_EQ(located.token.type, expected_type)
         << "Mismatched type for lexem: " << expected_lexem;
-    EXPECT_EQ(token.lexem, expected_lexem);
-    EXPECT_EQ(token.location.line, line);
-    EXPECT_EQ(token.location.column, col);
+    EXPECT_EQ(located.token.lexem, expected_lexem);
+    EXPECT_EQ(located.location.line, line);
+    EXPECT_EQ(located.location.column, col);
   }
 };
 
@@ -33,7 +33,7 @@ TEST_F(LexerTest, SingleCharacterTokens) {
   AssertToken(tokens[9], TokenType::Greater, ">", 1, 10);
   AssertToken(tokens[10], TokenType::Assign, "=", 1, 11);
   AssertToken(tokens[11], TokenType::Not, "!", 1, 12);
-  EXPECT_EQ(tokens[12].type, TokenType::Eof);
+  EXPECT_EQ(tokens[12].token.type, TokenType::Eof);
 }
 
 TEST_F(LexerTest, CompositeOperators) {
@@ -83,7 +83,7 @@ TEST_F(LexerTest, WhitespaceAndUnknown) {
   auto tokens = lexer.tokenize();
 
   AssertToken(tokens[0], TokenType::Error, "@", 2, 3);
-  EXPECT_EQ(tokens[1].type, TokenType::Eof);
+  EXPECT_EQ(tokens[1].token.type, TokenType::Eof);
 }
 
 TEST_F(LexerTest, FullProgram) {
@@ -101,7 +101,7 @@ TEST_F(LexerTest, FullProgram) {
   AssertToken(tokens[4], TokenType::LBrace, "{", 1, 12);
   AssertToken(tokens[8], TokenType::Equal, "==", 2, 9);
   AssertToken(tokens[16], TokenType::Return, "return", 5, 3);
-  EXPECT_EQ(tokens.back().type, TokenType::Eof);
+  EXPECT_EQ(tokens.back().token.type, TokenType::Eof);
 }
 
 }  // namespace scy::test

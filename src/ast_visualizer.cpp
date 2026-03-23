@@ -55,14 +55,14 @@ std::size_t AstVisualizer::visit_declaration(const Declaration& decl) {
 
         if constexpr (std::is_same_v<T, FunctionDecl>) {
           const std::size_t kId = next_id();
-          StringT label = "Function\\n" + StringT(arg.return_type.lexem) + " " +
-                          StringT(arg.name.lexem) + "(";
+          StringT label = "Function\\n" + StringT(arg.return_type.as_text()) +
+                          " " + StringT(arg.name) + "(";
           for (std::size_t i = 0; i < arg.params.size(); ++i) {
             if (i > 0) {
               label += ", ";
             }
-            label += StringT(arg.params[i].type.lexem) + " " +
-                     StringT(arg.params[i].name.lexem);
+            label += StringT(arg.params[i].type.as_text()) + " " +
+                     StringT(arg.params[i].name);
           }
           label += ")";
           add_node(kId, label, "box");
@@ -76,8 +76,8 @@ std::size_t AstVisualizer::visit_declaration(const Declaration& decl) {
 
         } else if constexpr (std::is_same_v<T, GlobalVarDecl>) {
           const std::size_t kId = next_id();
-          const StringT kLabel = "GlobalVar\\n" + StringT(arg.type.lexem) +
-                                 " " + StringT(arg.name.lexem);
+          const StringT kLabel = "GlobalVar\\n" + StringT(arg.type.as_text()) +
+                                 " " + StringT(arg.name);
           add_node(kId, kLabel, "box");
 
           if (arg.initializer) {
@@ -101,13 +101,6 @@ std::size_t AstVisualizer::visit_statement(const Statement& stmt) {
         if constexpr (std::is_same_v<T, ExpressionStmt>) {
           const std::size_t kId = next_id();
           add_node(kId, "ExprStmt", "box");
-          const std::size_t kExprId = visit_expression(*arg.expression);
-          add_edge(kId, kExprId);
-          return kId;
-
-        } else if constexpr (std::is_same_v<T, PrintStmt>) {
-          const std::size_t kId = next_id();
-          add_node(kId, "Print", "box");
           const std::size_t kExprId = visit_expression(*arg.expression);
           add_edge(kId, kExprId);
           return kId;
@@ -149,8 +142,8 @@ std::size_t AstVisualizer::visit_statement(const Statement& stmt) {
 
         } else if constexpr (std::is_same_v<T, VarDeclStmt>) {
           const std::size_t kId = next_id();
-          const StringT kLabel = "VarDecl\\n" + StringT(arg.type.lexem) + " " +
-                                 StringT(arg.name.lexem);
+          const StringT kLabel = "VarDecl\\n" + StringT(arg.type.as_text()) +
+                                 " " + StringT(arg.name);
           add_node(kId, kLabel, "box");
 
           if (arg.initializer) {
@@ -173,12 +166,12 @@ std::size_t AstVisualizer::visit_expression(const Expression& expr) {
 
         if constexpr (std::is_same_v<T, NumberExpr>) {
           const std::size_t kId = next_id();
-          add_node(kId, StringT(arg.value.lexem), "ellipse");
+          add_node(kId, StringT(arg.literal), "ellipse");
           return kId;
 
         } else if constexpr (std::is_same_v<T, IdentifierExpr>) {
           const std::size_t kId = next_id();
-          add_node(kId, StringT(arg.name.lexem), "ellipse");
+          add_node(kId, StringT(arg.name), "ellipse");
           return kId;
 
         } else if constexpr (std::is_same_v<T, UnaryExpr>) {
@@ -202,7 +195,7 @@ std::size_t AstVisualizer::visit_expression(const Expression& expr) {
           add_node(kId, "Assign", "circle");
 
           const std::size_t kNameId = next_id();
-          add_node(kNameId, StringT(arg.name.lexem), "ellipse");
+          add_node(kNameId, StringT(arg.name), "ellipse");
           add_edge(kId, kNameId, "target");
 
           const std::size_t kValId = visit_expression(*arg.value);
@@ -212,7 +205,7 @@ std::size_t AstVisualizer::visit_expression(const Expression& expr) {
 
         } else if constexpr (std::is_same_v<T, CallExpr>) {
           const std::size_t kId = next_id();
-          add_node(kId, "Call\\n" + StringT(arg.callee.lexem), "hexagon");
+          add_node(kId, "Call\\n" + StringT(arg.callee), "hexagon");
 
           for (std::size_t i = 0; i < arg.arguments.size(); ++i) {
             const std::size_t kArgId = visit_expression(*arg.arguments[i]);

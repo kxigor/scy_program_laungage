@@ -18,13 +18,14 @@ const UmapT<StringViewT, TokenType> kKeywordsMap = {
 
 };  // namespace
 
-VectorT<Token> Lexer::tokenize() {
-  VectorT<Token> tokens;
+VectorT<LocatedToken> Lexer::tokenize() {
+  VectorT<LocatedToken> tokens;
   while (not is_at_end()) {
     tokens.emplace_back(next_token());
   }
-  const Token kFinalToken = {
-      .type = TokenType::Eof, .lexem = "", .location = location_};
+  const LocatedToken kFinalToken = {
+      .token = Token{.type = TokenType::Eof, .lexem = ""},
+      .location = location_};
   tokens.emplace_back(kFinalToken);
   return tokens;
 }
@@ -64,7 +65,7 @@ void Lexer::skip_whitespace() noexcept {
   }
 }
 
-Token Lexer::make_token(TokenType type) {
+LocatedToken Lexer::make_token(TokenType type) {
   // clang-format off
   const StringViewT kLexem = source_.substr(start_, cursor_ - start_);
 
@@ -73,15 +74,14 @@ Token Lexer::make_token(TokenType type) {
       .column = location_.column - static_cast<PosT>(kLexem.size())
   };
 
-  return Token{
-    .type     = type,
-    .lexem    = kLexem,
+  return LocatedToken{
+    .token = Token{.type = type, .lexem = kLexem},
     .location = kLocation
   };
   // clang-format on
 }
 
-Token Lexer::identifier() {
+LocatedToken Lexer::identifier() {
   while (std::isalnum(peek()) != 0 || peek() == '_') {
     advance();
   }
@@ -95,14 +95,14 @@ Token Lexer::identifier() {
   return make_token(TokenType::Identifier);
 }
 
-Token Lexer::number() {
+LocatedToken Lexer::number() {
   while (std::isdigit(peek()) != 0) {
     advance();
   }
   return make_token(TokenType::Number);
 }
 
-Token Lexer::next_token() {
+LocatedToken Lexer::next_token() {
   skip_whitespace();
   start_ = cursor_;
 

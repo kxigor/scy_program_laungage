@@ -44,18 +44,14 @@ enum class TokenType : std::uint8_t {
 };
 // clang-format on
 
-struct SourceLocation {
-  PosT line{};
-  PosT column{};
-};
-
 struct Token {
   TokenType type;
   StringViewT lexem;
-  SourceLocation location;
 };
 
-// TODO: создать структуру для типов
-// TODO: создать структуру lexem и loacation
+struct LocatedToken {
+  Token token;
+  SourceLocation location;
+};
 
 };  // namespace scy
