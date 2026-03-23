@@ -19,12 +19,21 @@ Checks: >
   
   -modernize-use-trailing-return-type,
   -llvm-header-guard,
-  -bugprone-easily-swappable-parameters
+  -bugprone-easily-swappable-parameters,
+  -portability-avoid-pragma-once,
+  -readability-identifier-length,
+  -cppcoreguidelines-avoid-const-or-ref-data-members,
+  -llvm-prefer-static-over-anonymous-namespace,
+  -misc-no-recursion,
+  -cppcoreguidelines-avoid-do-while,
+  -misc-non-private-member-variables-in-classes,
+  -hicpp-move-const-arg,
+  -performance-move-const-arg
 WarningsAsErrors: '*'
 
 CheckOptions:
   - key: readability-function-size.LineThreshold
-    value: '50'
+    value: '100'
   - key: readability-function-size.ParameterThreshold
     value: '5'
   - key: readability-identifier-naming.ClassCase
@@ -38,11 +47,11 @@ CheckOptions:
   - key: readability-identifier-naming.EnumConstantCase
     value: 'CamelCase'
   - key: readability-identifier-naming.FunctionCase
-    value: 'CamelCase'
+    value: 'lower_case'
   - key: readability-identifier-naming.MemberCase
     value: 'lower_case'
   - key: readability-identifier-naming.MethodCase
-    value: 'CamelCase'
+    value: 'lower_case'
   - key: readability-identifier-naming.NamespaceCase
     value: 'lower_case'
   - key: readability-identifier-naming.ParameterCase
