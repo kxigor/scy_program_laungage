@@ -26,6 +26,7 @@ set(GCC_BASE_COMPILE
   -Wall -Wextra -Wpedantic # Standard, recommended warnings
   -fPIE                    # Position Independent Executable (Security)
   -fstack-protector-strong # Basic Stack Overflow protection (Security)
+  -DUNIT_TESTS
 )
 
 # Aggressive flags: Enables maximal strictness, used primarily for Debug/CI builds
@@ -37,7 +38,7 @@ set(GCC_AGGRESSIVE_COMPILE
   -Wsign-conversion -Wstrict-overflow=2 -Wsuggest-attribute=noreturn -Wunused
   -Wno-varargs -fcheck-new -fstrict-overflow -fno-omit-frame-pointer -Winline
   -Wvariadic-macros  -Wno-missing-field-initializers  -Wno-narrowing -Wpacked
-  -Wswitch-enum   -Wsync-nand    -Wundef  -Wunreachable-code   -Wno-self-move 
+  -Wsync-nand    -Wundef  -Wunreachable-code   -Wno-self-move 
   -Wformat-security      -Wformat-signedness      -Wformat=2     -Wlogical-op 
   -Wopenmp-simd       -Wpointer-arith      -Winit-self      -Wredundant-decls 
 )
