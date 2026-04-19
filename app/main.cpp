@@ -2,6 +2,7 @@
 #include <llvm/Support/raw_ostream.h>
 
 #include <fstream>
+#include <include/ast.hpp>
 #include <include/ast_visualizer.hpp>
 #include <include/codegen.hpp>
 #include <include/lexer.hpp>
@@ -10,24 +11,27 @@
 #include <iostream>
 #include <sstream>
 #include <string>
+#include <utility>
 
-static llvm::cl::opt<std::string> InputFilename(llvm::cl::Positional,
-                                                llvm::cl::desc("<input file>"),
-                                                llvm::cl::init("-"));
+namespace {
+llvm::cl::opt<std::string> input_filename(llvm::cl::Positional,
+                                          llvm::cl::desc("<input file>"),
+                                          llvm::cl::init("-"));
 
-static llvm::cl::opt<std::string> OutputFilename(
-    "o", llvm::cl::desc("Output IR file"), llvm::cl::value_desc("filename"),
-    llvm::cl::init(""));
+llvm::cl::opt<std::string> output_filename("o",
+                                           llvm::cl::desc("Output IR file"),
+                                           llvm::cl::value_desc("filename"),
+                                           llvm::cl::init(""));
 
-static llvm::cl::opt<bool> EmitDot("emit-dot",
-                                   llvm::cl::desc("Emit AST as DOT graph"),
-                                   llvm::cl::init(false));
+llvm::cl::opt<bool> emit_dot("emit-dot",
+                             llvm::cl::desc("Emit AST as DOT graph"),
+                             llvm::cl::init(false));
 
-static llvm::cl::opt<bool> PrintAST("print-ast",
-                                    llvm::cl::desc("Print AST to stderr"),
-                                    llvm::cl::init(false));
+llvm::cl::opt<bool> print_ast("print-ast",
+                              llvm::cl::desc("Print AST to stderr"),
+                              llvm::cl::init(false));
 
-static std::string read_source(const std::string& filename) {
+std::string read_source(const std::string& filename) {
   if (filename == "-") {
     std::ostringstream ss;
     ss << std::cin.rdbuf();
@@ -42,16 +46,17 @@ static std::string read_source(const std::string& filename) {
   ss << file.rdbuf();
   return ss.str();
 }
+}  // namespace
 
 int main(int argc, char** argv) {
   llvm::cl::ParseCommandLineOptions(argc, argv, "scy compiler\n");
 
-  std::string source = read_source(InputFilename);
-  if (source.empty() && InputFilename != "-") {
+  const auto kSource = read_source(input_filename);
+  if (kSource.empty() && input_filename != "-") {
     return 1;
   }
 
-  scy::Lexer lexer(source);
+  scy::Lexer lexer(kSource);
   auto tokens = lexer.tokenize();
 
   scy::Parser parser(std::move(tokens));
@@ -64,11 +69,11 @@ int main(int argc, char** argv) {
     return 1;
   }
 
-  if (PrintAST) {
+  if (print_ast) {
     scy::print_ast(std::cerr, program);
   }
 
-  if (EmitDot) {
+  if (emit_dot) {
     scy::visualize_ast(std::cout, program);
     return 0;
   }
@@ -92,9 +97,9 @@ int main(int argc, char** argv) {
     return 1;
   }
 
-  if (!OutputFilename.empty()) {
-    if (!codegen.dump_to_file(OutputFilename)) {
-      llvm::errs() << "Error: cannot write to '" << OutputFilename << "'\n";
+  if (!output_filename.empty()) {
+    if (!codegen.dump_to_file(output_filename)) {
+      llvm::errs() << "Error: cannot write to '" << output_filename << "'\n";
       return 1;
     }
   } else {

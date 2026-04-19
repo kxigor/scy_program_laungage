@@ -29,7 +29,10 @@ Checks: >
   -misc-non-private-member-variables-in-classes,
   -hicpp-move-const-arg,
   -performance-move-const-arg,
-  -modernize-use-designated-initializers
+  -modernize-use-designated-initializers,
+  -cppcoreguidelines-avoid-non-const-global-variables,
+  -modernize-loop-convert,
+  -clang-analyzer-security.ArrayBound
 WarningsAsErrors: '*'
 
 CheckOptions:

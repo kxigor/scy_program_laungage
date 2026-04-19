@@ -55,7 +55,9 @@ TEST_F(CodeGenTest, SimpleReturn) {
 TEST_F(CodeGenTest, Addition) {
   auto result = compile("int main() { return 1 + 2; }");
   ASSERT_TRUE(result.success);
-  EXPECT_NE(result.ir.find("add"), StringT::npos);
+  // LLVM constant-folds 1+2 to 3, so check for ret i32 3
+  EXPECT_TRUE(result.ir.find("add") != StringT::npos ||
+              result.ir.find("ret i32 3") != StringT::npos);
 }
 
 TEST_F(CodeGenTest, LocalVariable) {
@@ -143,20 +145,20 @@ TEST_F(CodeGenTest, GlobalVariable) {
 }
 
 TEST_F(CodeGenTest, UnaryNot) {
-  auto result = compile(R"(
-    int main() { return !0; }
-  )");
+  auto result = compile("int main() { return !0; }");
   ASSERT_TRUE(result.success);
-  EXPECT_NE(result.ir.find("icmp eq"), StringT::npos);
+  // LLVM constant-folds !0 to 1
+  EXPECT_TRUE(result.ir.find("icmp eq") != StringT::npos ||
+              result.ir.find("ret i32 1") != StringT::npos);
 }
 
 TEST_F(CodeGenTest, UnaryNeg) {
-  auto result = compile(R"(
-    int main() { return -5; }
-  )");
+  auto result = compile("int main() { return -5; }");
   ASSERT_TRUE(result.success);
+  // LLVM constant-folds -5 to ret i32 -5
   EXPECT_TRUE(result.ir.find("sub") != StringT::npos ||
-              result.ir.find("neg") != StringT::npos);
+              result.ir.find("neg") != StringT::npos ||
+              result.ir.find("ret i32 -5") != StringT::npos);
 }
 
 TEST_F(CodeGenTest, ComparisonOperators) {

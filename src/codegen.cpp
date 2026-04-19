@@ -2,16 +2,22 @@
 #include <llvm/IR/Constants.h>
 #include <llvm/IR/DerivedTypes.h>
 #include <llvm/IR/Function.h>
+#include <llvm/IR/GlobalValue.h>
 #include <llvm/IR/GlobalVariable.h>
+#include <llvm/IR/IRBuilder.h>
 #include <llvm/IR/Instructions.h>
 #include <llvm/IR/Type.h>
 #include <llvm/IR/Verifier.h>
 #include <llvm/Support/raw_ostream.h>
 
+#include <cstdint>
+#include <include/ast.hpp>
 #include <include/codegen.hpp>
 #include <include/config.hpp>
+#include <include/semantic_analyzer.hpp>
 #include <include/token.hpp>
 #include <include/type.hpp>
+#include <memory>
 #include <string>
 #include <system_error>
 #include <type_traits>
@@ -197,9 +203,9 @@ void CodeGen::visit_global_var_decl(const GlobalVarDecl& var,
   llvm::Constant* init_val = nullptr;
   if (var.initializer) {
     if (const auto* num = std::get_if<NumberExpr>(&(*var.initializer)->data)) {
-      int value = std::stoi(StringT(num->literal));
+      const int kValue = std::stoi(StringT(num->literal));
       init_val = llvm::ConstantInt::get(llvm::Type::getInt32Ty(context_),
-                                        static_cast<uint64_t>(value), true);
+                                        static_cast<uint64_t>(kValue), true);
     }
   }
 
@@ -343,9 +349,9 @@ llvm::Value* CodeGen::visit_expression(const Expression& expr) {
 }
 
 llvm::Value* CodeGen::visit_number_expr(const NumberExpr& expr) {
-  int value = std::stoi(StringT(expr.literal));
+  const int kValue = std::stoi(StringT(expr.literal));
   return llvm::ConstantInt::get(llvm::Type::getInt32Ty(context_),
-                                static_cast<uint64_t>(value), true);
+                                static_cast<uint64_t>(kValue), true);
 }
 
 llvm::Value* CodeGen::visit_identifier_expr(const IdentifierExpr& expr) {
@@ -454,11 +460,11 @@ llvm::Value* CodeGen::visit_call_expr(const CallExpr& expr) {
   VectorT<llvm::Value*> args;
   args.reserve(expr.arguments.size());
   for (const auto& arg : expr.arguments) {
-    llvm::Value* arg_val = visit_expression(*arg);
-    if (arg_val == nullptr) {
+    llvm::Value* const kArgVal = visit_expression(*arg);  // NOLINT
+    if (kArgVal == nullptr) {
       return nullptr;
     }
-    args.push_back(arg_val);
+    args.push_back(kArgVal);
   }
 
   if (callee->getReturnType()->isVoidTy()) {

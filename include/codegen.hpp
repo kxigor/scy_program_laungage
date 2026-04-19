@@ -1,20 +1,21 @@
 #pragma once
 
 #include <llvm/IR/IRBuilder.h>
+#include <llvm/IR/Instructions.h>
 #include <llvm/IR/LLVMContext.h>
 #include <llvm/IR/Module.h>
 #include <llvm/IR/Value.h>
 
 #include "ast.hpp"
 #include "config.hpp"
-#include "scope.hpp"
 #include "semantic_analyzer.hpp"
+#include "type.hpp"
 
 namespace scy {
 
 class CodeGen {
  public:
-  CodeGen(const StringT& module_name = "scy_module");
+  explicit CodeGen(const StringT& module_name = "scy_module");
 
   bool generate(const Program& program, const SemanticResult& sema_result);
 
@@ -62,9 +63,9 @@ class CodeGen {
   void set_named_value(StringViewT name, llvm::AllocaInst* alloca);
   llvm::AllocaInst* get_named_value(StringViewT name);
 
-  llvm::AllocaInst* create_entry_block_alloca(llvm::Function* func,
-                                              llvm::Type* type,
-                                              const StringT& name);
+  static llvm::AllocaInst* create_entry_block_alloca(llvm::Function* func,
+                                                     llvm::Type* type,
+                                                     const StringT& name);
 
   void report_error(const StringT& message);
 
