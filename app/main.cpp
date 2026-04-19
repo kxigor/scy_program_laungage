@@ -19,7 +19,7 @@ void printer() {
 
 int main() {
   printer();
-  
+
   int a = 1;
   int b = 2;
   int c = 3;
@@ -56,6 +56,15 @@ int main() {
 
   scy::Parser parser(std::move(tokens));
   auto program = parser.parse();
+
+  if (!result.errors.empty()) {
+  std::cerr << "Semantic errors:\n";
+  for (const auto& err : result.errors) {
+    std::cerr << "  Line " << err.location.line
+              << ", Col " << err.location.column
+              << ": " << err.message << "\n";
+  }
+}
 
   scy::visualize_ast(std::cout, program);
 }

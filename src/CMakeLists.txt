@@ -5,6 +5,8 @@ add_library(scy
   type.cpp
   ast_visualizer.cpp
   ast_printer.cpp
+  scope.cpp
+  semantic_analyzer.cpp
 )
 
 target_link_libraries(scy
