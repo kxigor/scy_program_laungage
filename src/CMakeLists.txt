@@ -22,6 +22,8 @@ target_include_directories(scy
     $<BUILD_INTERFACE:${LLVM_INCLUDE_DIRS}>
 )
 
+set_target_properties(LLVMCore LLVMSupport PROPERTIES INTERFACE_SYSTEM_INCLUDE_DIRECTORIES "${LLVM_INCLUDE_DIRS}")
+
 target_link_libraries(scy
   PUBLIC
     LLVMCore
