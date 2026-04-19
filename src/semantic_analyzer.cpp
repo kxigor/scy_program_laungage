@@ -1,8 +1,11 @@
-#include <include/semantic_analyzer.hpp>
+#include <include/ast.hpp>
 #include <include/config.hpp>
-#include <include/type.hpp>
-#include <string>
+#include <include/scope.hpp>
+#include <include/semantic_analyzer.hpp>
+#include <include/semantic_error.hpp>
+#include <include/symbol.hpp>
 #include <type_traits>
+#include <utility>
 #include <variant>
 
 namespace scy {
@@ -18,8 +21,6 @@ SemanticResult SemanticAnalyzer::analyze(const Program& program) {
 }
 
 void SemanticAnalyzer::visit_program(const Program& program) {
-  // First pass: register all function signatures and global variables
-  // so forward references work.
   for (const auto& decl : program.declarations) {
     std::visit(
         [&](auto&& arg) {
@@ -32,11 +33,10 @@ void SemanticAnalyzer::visit_program(const Program& program) {
                   ParameterSymbol{arg.params[i].name, arg.params[i].type, i});
             }
 
-            Symbol sym{
-                .kind = SymbolKind::Function,
-                .data = FunctionSymbol{arg.name, arg.return_type,
-                                       std::move(param_symbols)},
-                .location = decl->location};
+            Symbol sym{.kind = SymbolKind::Function,
+                       .data = FunctionSymbol{arg.name, arg.return_type,
+                                              std::move(param_symbols)},
+                       .location = decl->location};
 
             define_symbol(arg.name, std::move(sym));
 
@@ -51,7 +51,6 @@ void SemanticAnalyzer::visit_program(const Program& program) {
         decl->data);
   }
 
-  // Second pass: visit function bodies
   for (const auto& decl : program.declarations) {
     visit_declaration(*decl);
   }
@@ -76,17 +75,16 @@ void SemanticAnalyzer::visit_function_decl(const FunctionDecl& func,
   push_scope();
 
   for (PosT i = 0; i < func.params.size(); ++i) {
-    Symbol param_sym{.kind = SymbolKind::Parameter,
-                     .data = ParameterSymbol{func.params[i].name,
-                                             func.params[i].type, i},
-                     .location = {}};
+    Symbol param_sym{
+        .kind = SymbolKind::Parameter,
+        .data = ParameterSymbol{func.params[i].name, func.params[i].type, i},
+        .location = {}};
 
-    if (not current_scope_->define(func.params[i].name,
-                                   std::move(param_sym))) {
-      report_error(SemanticErrorKind::RedeclaredVariable,
-                   "Duplicate parameter name '" +
-                       StringT(func.params[i].name) + "'",
-                   {});
+    if (not current_scope_->define(func.params[i].name, std::move(param_sym))) {
+      report_error(
+          SemanticErrorKind::RedeclaredVariable,
+          "Duplicate parameter name '" + StringT(func.params[i].name) + "'",
+          {});
     }
   }
 
@@ -169,10 +167,10 @@ void SemanticAnalyzer::visit_var_decl_stmt(const VarDeclStmt& stmt,
              .location = loc};
 
   if (not current_scope_->define(stmt.name, std::move(sym))) {
-    report_error(SemanticErrorKind::RedeclaredVariable,
-                 "Variable '" + StringT(stmt.name) +
-                     "' already declared in this scope",
-                 loc);
+    report_error(
+        SemanticErrorKind::RedeclaredVariable,
+        "Variable '" + StringT(stmt.name) + "' already declared in this scope",
+        loc);
   }
 }
 
@@ -227,10 +225,9 @@ void SemanticAnalyzer::visit_assign_expr(const AssignExpr& expr,
                                          SourceLocation loc) {
   const auto* sym = current_scope_->resolve(expr.name);
   if (sym == nullptr) {
-    report_error(SemanticErrorKind::UndeclaredVariable,
-                 "Assignment to undeclared variable '" + StringT(expr.name) +
-                     "'",
-                 loc);
+    report_error(
+        SemanticErrorKind::UndeclaredVariable,
+        "Assignment to undeclared variable '" + StringT(expr.name) + "'", loc);
   }
 
   visit_expression(*expr.value);
@@ -258,13 +255,16 @@ void SemanticAnalyzer::push_scope() {
   current_scope_ = current_scope_->create_child();
 }
 
-void SemanticAnalyzer::pop_scope() { current_scope_ = current_scope_->parent(); }
+void SemanticAnalyzer::pop_scope() {
+  current_scope_ = current_scope_->parent();
+}
 
 void SemanticAnalyzer::define_symbol(StringViewT name, Symbol symbol) {
-  SourceLocation loc = symbol.location;
+  const SourceLocation kLoc = symbol.location;
   if (not current_scope_->define(name, std::move(symbol))) {
     report_error(SemanticErrorKind::RedeclaredVariable,
-                 "'" + StringT(name) + "' already declared in this scope", loc);
+                 "'" + StringT(name) + "' already declared in this scope",
+                 kLoc);
   }
 }
 

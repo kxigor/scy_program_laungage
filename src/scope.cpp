@@ -1,4 +1,7 @@
+#include <include/config.hpp>
 #include <include/scope.hpp>
+#include <include/symbol.hpp>
+#include <utility>
 
 namespace scy {
 

@@ -219,12 +219,9 @@ TEST_F(SemanticAnalyzerTest, ScopeTreeStructure) {
   )");
   expect_no_errors(result);
 
-  // Global scope should have children (function scope)
   ASSERT_FALSE(result.global_scope->children().empty());
 
-  // Function scope (main) should have children (the two block scopes)
   const auto* func_scope = result.global_scope->children()[0].get();
-  // func_scope has the block scopes as children
   EXPECT_GE(func_scope->children().size(), 2);
 }
 

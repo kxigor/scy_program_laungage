@@ -28,7 +28,8 @@ Checks: >
   -cppcoreguidelines-avoid-do-while,
   -misc-non-private-member-variables-in-classes,
   -hicpp-move-const-arg,
-  -performance-move-const-arg
+  -performance-move-const-arg,
+  -modernize-use-designated-initializers
 WarningsAsErrors: '*'
 
 CheckOptions:

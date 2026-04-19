@@ -1,6 +1,7 @@
 #include <include/ast_visualizer.hpp>
 #include <include/lexer.hpp>
 #include <include/parser.hpp>
+#include <include/semantic_analyzer.hpp>
 #include <iostream>
 #include <utility>
 
@@ -57,14 +58,16 @@ int main() {
   scy::Parser parser(std::move(tokens));
   auto program = parser.parse();
 
+  scy::SemanticAnalyzer analyzer;
+  auto result = analyzer.analyze(program);
+
   if (!result.errors.empty()) {
-  std::cerr << "Semantic errors:\n";
-  for (const auto& err : result.errors) {
-    std::cerr << "  Line " << err.location.line
-              << ", Col " << err.location.column
-              << ": " << err.message << "\n";
+    std::cerr << "Semantic errors:\n";
+    for (const auto& err : result.errors) {
+      std::cerr << "  Line " << err.location.line << ", Col "
+                << err.location.column << ": " << err.message << "\n";
+    }
   }
-}
 
   scy::visualize_ast(std::cout, program);
 }
