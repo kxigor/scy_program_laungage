@@ -1,20 +1,19 @@
+#include <llvm/Support/CommandLine.h>
+#include <llvm/Support/raw_ostream.h>
+
+#include <fstream>
 #include <include/ast_visualizer.hpp>
 #include <include/codegen.hpp>
 #include <include/lexer.hpp>
 #include <include/parser.hpp>
 #include <include/semantic_analyzer.hpp>
-
-#include <llvm/Support/CommandLine.h>
-#include <llvm/Support/raw_ostream.h>
-
-#include <fstream>
 #include <iostream>
 #include <sstream>
 #include <string>
 
 static llvm::cl::opt<std::string> InputFilename(llvm::cl::Positional,
-                                                 llvm::cl::desc("<input file>"),
-                                                 llvm::cl::init("-"));
+                                                llvm::cl::desc("<input file>"),
+                                                llvm::cl::init("-"));
 
 static llvm::cl::opt<std::string> OutputFilename(
     "o", llvm::cl::desc("Output IR file"), llvm::cl::value_desc("filename"),
@@ -52,11 +51,9 @@ int main(int argc, char** argv) {
     return 1;
   }
 
-  // Lex
   scy::Lexer lexer(source);
   auto tokens = lexer.tokenize();
 
-  // Parse
   scy::Parser parser(std::move(tokens));
   auto program = parser.parse();
 
@@ -67,7 +64,6 @@ int main(int argc, char** argv) {
     return 1;
   }
 
-  // Optional AST output
   if (PrintAST) {
     scy::print_ast(std::cerr, program);
   }
@@ -77,20 +73,17 @@ int main(int argc, char** argv) {
     return 0;
   }
 
-  // Semantic analysis
   scy::SemanticAnalyzer sema;
   auto sema_result = sema.analyze(program);
 
   if (!sema_result.errors.empty()) {
     for (const auto& err : sema_result.errors) {
-      llvm::errs() << "Semantic error at line " << err.location.line
-                    << ", col " << err.location.column << ": " << err.message
-                    << "\n";
+      llvm::errs() << "Semantic error at line " << err.location.line << ", col "
+                   << err.location.column << ": " << err.message << "\n";
     }
     return 1;
   }
 
-  // Code generation
   scy::CodeGen codegen("scy_module");
   if (!codegen.generate(program, sema_result)) {
     for (const auto& err : codegen.errors()) {
@@ -99,7 +92,6 @@ int main(int argc, char** argv) {
     return 1;
   }
 
-  // Output IR
   if (!OutputFilename.empty()) {
     if (!codegen.dump_to_file(OutputFilename)) {
       llvm::errs() << "Error: cannot write to '" << OutputFilename << "'\n";

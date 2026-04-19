@@ -1,8 +1,3 @@
-#include <include/codegen.hpp>
-#include <include/config.hpp>
-#include <include/token.hpp>
-#include <include/type.hpp>
-
 #include <llvm/IR/BasicBlock.h>
 #include <llvm/IR/Constants.h>
 #include <llvm/IR/DerivedTypes.h>
@@ -13,9 +8,14 @@
 #include <llvm/IR/Verifier.h>
 #include <llvm/Support/raw_ostream.h>
 
+#include <include/codegen.hpp>
+#include <include/config.hpp>
+#include <include/token.hpp>
+#include <include/type.hpp>
 #include <string>
 #include <system_error>
 #include <type_traits>
+#include <utility>
 #include <variant>
 
 namespace scy {
@@ -37,7 +37,6 @@ bool CodeGen::generate(const Program& program,
     }
   }
 
-  // Verify the module
   std::string verify_err;
   llvm::raw_string_ostream verify_os(verify_err);
   if (llvm::verifyModule(*module_, &verify_os)) {
@@ -48,7 +47,9 @@ bool CodeGen::generate(const Program& program,
   return true;
 }
 
-void CodeGen::print_ir(llvm::raw_ostream& os) const { module_->print(os, nullptr); }
+void CodeGen::print_ir(llvm::raw_ostream& os) const {
+  module_->print(os, nullptr);
+}
 
 bool CodeGen::dump_to_file(const StringT& filename) const {
   std::error_code ec;
@@ -60,14 +61,14 @@ bool CodeGen::dump_to_file(const StringT& filename) const {
   return true;
 }
 
-// ======================= Type Mapping =======================
-
 llvm::Type* CodeGen::to_llvm_type(const TypeSpec& type) {
   switch (type.kind) {
     case TypeKind::Int:
       return llvm::Type::getInt32Ty(context_);
     case TypeKind::Void:
       return llvm::Type::getVoidTy(context_);
+    default:
+      std::unreachable();
   }
   return llvm::Type::getVoidTy(context_);
 }
@@ -83,8 +84,6 @@ llvm::FunctionType* CodeGen::to_llvm_function_type(const FunctionDecl& func) {
 
   return llvm::FunctionType::get(ret_type, param_types, false);
 }
-
-// =================== Forward Declarations ===================
 
 void CodeGen::declare_functions(const Program& program) {
   for (const auto& decl : program.declarations) {
@@ -102,8 +101,6 @@ void CodeGen::declare_functions(const Program& program) {
   }
 }
 
-// ==================== Named Values Stack ====================
-
 void CodeGen::push_named_values() { named_values_stack_.emplace_back(); }
 
 void CodeGen::pop_named_values() { named_values_stack_.pop_back(); }
@@ -115,7 +112,6 @@ void CodeGen::set_named_value(StringViewT name, llvm::AllocaInst* alloca) {
 }
 
 llvm::AllocaInst* CodeGen::get_named_value(StringViewT name) {
-  // Walk the stack from top to bottom (innermost scope first)
   for (auto it = named_values_stack_.rbegin(); it != named_values_stack_.rend();
        ++it) {
     auto found = it->find(name);
@@ -137,8 +133,6 @@ llvm::AllocaInst* CodeGen::create_entry_block_alloca(llvm::Function* func,
 void CodeGen::report_error(const StringT& message) {
   errors_.emplace_back(message);
 }
-
-// ==================== Declaration Visitors ====================
 
 void CodeGen::visit_declaration(const Declaration& decl) {
   std::visit(
@@ -167,32 +161,27 @@ void CodeGen::visit_function_decl(const FunctionDecl& func,
 
   push_named_values();
 
-  // Allocate space for parameters and store them
   PosT idx = 0;
   for (auto& arg : llvm_func->args()) {
     const auto& param = func.params[idx];
     arg.setName(StringT(param.name));
 
-    auto* alloca =
-        create_entry_block_alloca(llvm_func, arg.getType(), StringT(param.name));
+    auto* alloca = create_entry_block_alloca(llvm_func, arg.getType(),
+                                             StringT(param.name));
     builder_.CreateStore(&arg, alloca);
     set_named_value(param.name, alloca);
     ++idx;
   }
 
-  // Visit body statements
   for (const auto& stmt : func.body) {
     visit_statement(*stmt);
   }
 
-  // If the function is void and the current block has no terminator, add
-  // ret void
   llvm::BasicBlock* current_bb = builder_.GetInsertBlock();
   if (current_bb != nullptr && current_bb->getTerminator() == nullptr) {
     if (func.return_type.kind == TypeKind::Void) {
       builder_.CreateRetVoid();
     } else {
-      // Implicit return 0 for int functions (like C's main)
       builder_.CreateRet(
           llvm::ConstantInt::get(llvm::Type::getInt32Ty(context_), 0));
     }
@@ -207,12 +196,10 @@ void CodeGen::visit_global_var_decl(const GlobalVarDecl& var,
 
   llvm::Constant* init_val = nullptr;
   if (var.initializer) {
-    // For global initializers, we only support constant integers for now
-    if (const auto* num =
-            std::get_if<NumberExpr>(&(*var.initializer)->data)) {
+    if (const auto* num = std::get_if<NumberExpr>(&(*var.initializer)->data)) {
       int value = std::stoi(StringT(num->literal));
-      init_val = llvm::ConstantInt::get(
-          llvm::Type::getInt32Ty(context_), static_cast<uint64_t>(value), true);
+      init_val = llvm::ConstantInt::get(llvm::Type::getInt32Ty(context_),
+                                        static_cast<uint64_t>(value), true);
     }
   }
 
@@ -227,10 +214,7 @@ void CodeGen::visit_global_var_decl(const GlobalVarDecl& var,
   globals_[var.name] = global_var;
 }
 
-// ==================== Statement Visitors ====================
-
 void CodeGen::visit_statement(const Statement& stmt) {
-  // If current block already has a terminator, skip (dead code after return)
   if (builder_.GetInsertBlock() != nullptr &&
       builder_.GetInsertBlock()->getTerminator() != nullptr) {
     return;
@@ -286,7 +270,6 @@ void CodeGen::visit_if_stmt(const IfStmt& stmt) {
     return;
   }
 
-  // Convert condition to bool (i1): compare != 0
   cond_val = builder_.CreateICmpNE(
       cond_val, llvm::ConstantInt::get(cond_val->getType(), 0), "ifcond");
 
@@ -298,14 +281,12 @@ void CodeGen::visit_if_stmt(const IfStmt& stmt) {
 
   builder_.CreateCondBr(cond_val, then_bb, else_bb);
 
-  // Emit then block
   builder_.SetInsertPoint(then_bb);
   visit_statement(*stmt.then_branch);
   if (builder_.GetInsertBlock()->getTerminator() == nullptr) {
     builder_.CreateBr(merge_bb);
   }
 
-  // Emit else block
   builder_.SetInsertPoint(else_bb);
   if (stmt.else_branch) {
     visit_statement(**stmt.else_branch);
@@ -314,7 +295,6 @@ void CodeGen::visit_if_stmt(const IfStmt& stmt) {
     builder_.CreateBr(merge_bb);
   }
 
-  // Continue at merge
   builder_.SetInsertPoint(merge_bb);
 }
 
@@ -335,8 +315,6 @@ void CodeGen::visit_var_decl_stmt(const VarDeclStmt& stmt) {
 
   set_named_value(stmt.name, alloca);
 }
-
-// ==================== Expression Visitors ====================
 
 llvm::Value* CodeGen::visit_expression(const Expression& expr) {
   return std::visit(
@@ -371,13 +349,11 @@ llvm::Value* CodeGen::visit_number_expr(const NumberExpr& expr) {
 }
 
 llvm::Value* CodeGen::visit_identifier_expr(const IdentifierExpr& expr) {
-  // Check local variables first
   if (auto* alloca = get_named_value(expr.name)) {
     return builder_.CreateLoad(alloca->getAllocatedType(), alloca,
                                StringT(expr.name));
   }
 
-  // Check globals
   auto it = globals_.find(expr.name);
   if (it != globals_.end()) {
     return builder_.CreateLoad(it->second->getValueType(), it->second,
@@ -398,7 +374,6 @@ llvm::Value* CodeGen::visit_unary_expr(const UnaryExpr& expr) {
     case TokenType::Minus:
       return builder_.CreateNeg(operand, "neg");
     case TokenType::Not: {
-      // !x  =>  x == 0
       auto* zero = llvm::ConstantInt::get(operand->getType(), 0);
       auto* cmp = builder_.CreateICmpEQ(operand, zero, "nottmp");
       return builder_.CreateZExt(cmp, llvm::Type::getInt32Ty(context_),
@@ -454,13 +429,11 @@ llvm::Value* CodeGen::visit_assign_expr(const AssignExpr& expr) {
     return nullptr;
   }
 
-  // Check locals
   if (auto* alloca = get_named_value(expr.name)) {
     builder_.CreateStore(val, alloca);
     return val;
   }
 
-  // Check globals
   auto it = globals_.find(expr.name);
   if (it != globals_.end()) {
     builder_.CreateStore(val, it->second);

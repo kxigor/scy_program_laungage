@@ -155,7 +155,6 @@ TEST_F(CodeGenTest, UnaryNeg) {
     int main() { return -5; }
   )");
   ASSERT_TRUE(result.success);
-  // neg is usually lowered to `sub 0, x`
   EXPECT_TRUE(result.ir.find("sub") != StringT::npos ||
               result.ir.find("neg") != StringT::npos);
 }
