@@ -15,6 +15,13 @@ add_library(scy
   codegen.cpp
 )
 
+target_include_directories(scy
+  PUBLIC
+    $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}>
+  SYSTEM PUBLIC
+    $<BUILD_INTERFACE:${LLVM_INCLUDE_DIRS}>
+)
+
 target_link_libraries(scy
   PUBLIC
     LLVMCore
@@ -23,12 +30,6 @@ target_link_libraries(scy
     project_options
     project_sanitizers
     project_coverage
-)
-
-target_include_directories(scy
-  PUBLIC
-    $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}>
-    $<BUILD_INTERFACE:${LLVM_INCLUDE_DIRS}>
 )
 
 target_compile_definitions(scy
