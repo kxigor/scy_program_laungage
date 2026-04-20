@@ -8,8 +8,20 @@
 cmake --preset dev-debug-asan
 cmake --build --preset dev-debug-asan
 ctest --preset dev-debug-asan
-./build/dev-debug-asan/app/app > dot.dot
-dot -Tpng dot.dot -o out.png
+
+echo '
+int main() {
+  int a = 5;
+  int b = 10;
+  return a + b;
+}
+' > test.scy
+
+./build/dev-debug-asan/app/app test.scy -o test.ll
+
+clang test.ll -o test
+./test
+echo $?
 ```
 
 ## Example
