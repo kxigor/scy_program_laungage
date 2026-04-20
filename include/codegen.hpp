@@ -15,24 +15,43 @@ namespace scy {
 
 class CodeGen {
  public:
+  /*================= Constructors/Destructors =================*/
   explicit CodeGen(const StringT& module_name = "scy_module");
 
-  bool generate(const Program& program, const SemanticResult& sema_result);
+  CodeGen(const CodeGen& /*unused*/) = default;
 
-  void print_ir(llvm::raw_ostream& os) const;
+  CodeGen(CodeGen&& /*unused*/) = default;
 
-  bool dump_to_file(const StringT& filename) const;
+  ~CodeGen() = default;
 
+  /*======================== Assignment ========================*/
+  CodeGen& operator=(const CodeGen& /*unused*/) = default;
+
+  CodeGen& operator=(CodeGen&& /*unused*/) = default;
+
+  /*========================= Core API =========================*/
+  [[nodiscard]] bool generate(const Program& program,
+                              const SemanticResult& sema_result);
+
+  [[nodiscard]] bool dump_to_file(const StringT& filename) const;
+
+  /*========================= Getters ==========================*/
   [[nodiscard]] llvm::Module& module() noexcept { return *module_; }
+
   [[nodiscard]] const llvm::Module& module() const noexcept { return *module_; }
 
   [[nodiscard]] const VectorT<StringT>& errors() const noexcept {
     return errors_;
   }
 
+  /*========================== Status ==========================*/
   [[nodiscard]] bool has_errors() const noexcept { return not errors_.empty(); }
 
+  /*========================= Printer ==========================*/
+  void print_ir(llvm::raw_ostream& os) const;
+
  private:
+  /*========================== Impls ===========================*/
   void visit_declaration(const Declaration& decl);
   void visit_function_decl(const FunctionDecl& func, SourceLocation loc);
   void visit_global_var_decl(const GlobalVarDecl& var, SourceLocation loc);
@@ -63,12 +82,13 @@ class CodeGen {
   void set_named_value(StringViewT name, llvm::AllocaInst* alloca);
   llvm::AllocaInst* get_named_value(StringViewT name);
 
+  void report_error(const StringT& message);
+
   static llvm::AllocaInst* create_entry_block_alloca(llvm::Function* func,
                                                      llvm::Type* type,
                                                      const StringT& name);
 
-  void report_error(const StringT& message);
-
+  /*======================= Data fileds ========================*/
   llvm::LLVMContext context_;
   UniquePtrT<llvm::Module> module_;
   llvm::IRBuilder<> builder_;

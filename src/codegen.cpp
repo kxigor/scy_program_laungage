@@ -31,7 +31,7 @@ CodeGen::CodeGen(const StringT& module_name)
       builder_(context_) {}
 
 bool CodeGen::generate(const Program& program,
-                       const SemanticResult& /*sema_result*/) {
+                       const SemanticResult& /*unused*/) {
   errors_.clear();
 
   declare_functions(program);
@@ -46,15 +46,11 @@ bool CodeGen::generate(const Program& program,
   std::string verify_err;
   llvm::raw_string_ostream verify_os(verify_err);
   if (llvm::verifyModule(*module_, &verify_os)) {
-    report_error("Module verification failed: " + verify_err);
+    report_error(std::format("Module verification failed: {}", verify_err));
     return false;
   }
 
   return true;
-}
-
-void CodeGen::print_ir(llvm::raw_ostream& os) const {
-  module_->print(os, nullptr);
 }
 
 bool CodeGen::dump_to_file(const StringT& filename) const {
@@ -67,77 +63,8 @@ bool CodeGen::dump_to_file(const StringT& filename) const {
   return true;
 }
 
-llvm::Type* CodeGen::to_llvm_type(const TypeSpec& type) {
-  switch (type.kind) {
-    case TypeKind::Int:
-      return llvm::Type::getInt32Ty(context_);
-    case TypeKind::Void:
-      return llvm::Type::getVoidTy(context_);
-    default:
-      std::unreachable();
-  }
-  return llvm::Type::getVoidTy(context_);
-}
-
-llvm::FunctionType* CodeGen::to_llvm_function_type(const FunctionDecl& func) {
-  llvm::Type* ret_type = to_llvm_type(func.return_type);
-
-  VectorT<llvm::Type*> param_types;
-  param_types.reserve(func.params.size());
-  for (const auto& param : func.params) {
-    param_types.push_back(to_llvm_type(param.type));
-  }
-
-  return llvm::FunctionType::get(ret_type, param_types, false);
-}
-
-void CodeGen::declare_functions(const Program& program) {
-  for (const auto& decl : program.declarations) {
-    std::visit(
-        [&](auto&& arg) {
-          using T = std::decay_t<decltype(arg)>;
-
-          if constexpr (std::is_same_v<T, FunctionDecl>) {
-            auto* func_type = to_llvm_function_type(arg);
-            llvm::Function::Create(func_type, llvm::Function::ExternalLinkage,
-                                   StringT(arg.name), module_.get());
-          }
-        },
-        decl->data);
-  }
-}
-
-void CodeGen::push_named_values() { named_values_stack_.emplace_back(); }
-
-void CodeGen::pop_named_values() { named_values_stack_.pop_back(); }
-
-void CodeGen::set_named_value(StringViewT name, llvm::AllocaInst* alloca) {
-  if (not named_values_stack_.empty()) {
-    named_values_stack_.back()[name] = alloca;
-  }
-}
-
-llvm::AllocaInst* CodeGen::get_named_value(StringViewT name) {
-  for (auto it = named_values_stack_.rbegin(); it != named_values_stack_.rend();
-       ++it) {
-    auto found = it->find(name);
-    if (found != it->end()) {
-      return found->second;
-    }
-  }
-  return nullptr;
-}
-
-llvm::AllocaInst* CodeGen::create_entry_block_alloca(llvm::Function* func,
-                                                     llvm::Type* type,
-                                                     const StringT& name) {
-  llvm::IRBuilder<> tmp_builder(&func->getEntryBlock(),
-                                func->getEntryBlock().begin());
-  return tmp_builder.CreateAlloca(type, nullptr, name);
-}
-
-void CodeGen::report_error(const StringT& message) {
-  errors_.emplace_back(message);
+void CodeGen::print_ir(llvm::raw_ostream& os) const {
+  module_->print(os, nullptr);
 }
 
 void CodeGen::visit_declaration(const Declaration& decl) {
@@ -158,7 +85,7 @@ void CodeGen::visit_function_decl(const FunctionDecl& func,
                                   SourceLocation /*loc*/) {
   llvm::Function* llvm_func = module_->getFunction(StringT(func.name));
   if (llvm_func == nullptr) {
-    report_error("Function '" + StringT(func.name) + "' not found in module");
+    report_error(std::format("Function '{}' not found in module", func.name));
     return;
   }
 
@@ -366,7 +293,7 @@ llvm::Value* CodeGen::visit_identifier_expr(const IdentifierExpr& expr) {
                                StringT(expr.name));
   }
 
-  report_error("Unknown variable: " + StringT(expr.name));
+  report_error(std::format("Unknown variable: {}", expr.name));
   return nullptr;
 }
 
@@ -386,7 +313,7 @@ llvm::Value* CodeGen::visit_unary_expr(const UnaryExpr& expr) {
                                  "notres");
     }
     default:
-      report_error("Unknown unary operator: " + StringT(expr.op.lexem));
+      report_error(std::format("Unknown unary operator: {}", expr.op.lexem));
       return nullptr;
   }
 }
@@ -424,7 +351,7 @@ llvm::Value* CodeGen::visit_binary_expr(const BinaryExpr& expr) {
                                  "gtres");
     }
     default:
-      report_error("Unknown binary operator: " + StringT(expr.op.lexem));
+      report_error(std::format("Unknown binary operator: {}", expr.op.lexem));
       return nullptr;
   }
 }
@@ -446,14 +373,14 @@ llvm::Value* CodeGen::visit_assign_expr(const AssignExpr& expr) {
     return val;
   }
 
-  report_error("Unknown variable for assignment: " + StringT(expr.name));
+  report_error(std::format("Unknown variable for assignment: {}", expr.name));
   return nullptr;
 }
 
 llvm::Value* CodeGen::visit_call_expr(const CallExpr& expr) {
   llvm::Function* callee = module_->getFunction(StringT(expr.callee));
   if (callee == nullptr) {
-    report_error("Unknown function: " + StringT(expr.callee));
+    report_error(std::format("Unknown function: {}", expr.callee));
     return nullptr;
   }
 
@@ -477,6 +404,79 @@ llvm::Value* CodeGen::visit_call_expr(const CallExpr& expr) {
 
 llvm::Value* CodeGen::visit_grouping_expr(const GroupingExpr& expr) {
   return visit_expression(*expr.expression);
+}
+
+llvm::Type* CodeGen::to_llvm_type(const TypeSpec& type) {
+  switch (type.kind) {
+    case TypeKind::Int:
+      return llvm::Type::getInt32Ty(context_);
+    case TypeKind::Void:
+      return llvm::Type::getVoidTy(context_);
+    default:
+      std::unreachable();
+  }
+  return llvm::Type::getVoidTy(context_);
+}
+
+llvm::FunctionType* CodeGen::to_llvm_function_type(const FunctionDecl& func) {
+  llvm::Type* ret_type = to_llvm_type(func.return_type);
+
+  VectorT<llvm::Type*> param_types;
+  param_types.reserve(func.params.size());
+  for (const auto& param : func.params) {
+    param_types.push_back(to_llvm_type(param.type));
+  }
+
+  return llvm::FunctionType::get(ret_type, param_types, false);
+}
+
+void CodeGen::declare_functions(const Program& program) {
+  for (const auto& decl : program.declarations) {
+    std::visit(
+        [&](auto&& arg) {
+          using T = std::decay_t<decltype(arg)>;
+
+          if constexpr (std::is_same_v<T, FunctionDecl>) {
+            auto* func_type = to_llvm_function_type(arg);
+            llvm::Function::Create(func_type, llvm::Function::ExternalLinkage,
+                                   StringT(arg.name), module_.get());
+          }
+        },
+        decl->data);
+  }
+}
+
+void CodeGen::push_named_values() { named_values_stack_.emplace_back(); }
+
+void CodeGen::pop_named_values() { named_values_stack_.pop_back(); }
+
+void CodeGen::set_named_value(StringViewT name, llvm::AllocaInst* alloca) {
+  if (not named_values_stack_.empty()) {
+    named_values_stack_.back()[name] = alloca;
+  }
+}
+
+llvm::AllocaInst* CodeGen::get_named_value(StringViewT name) {
+  for (auto it = named_values_stack_.rbegin(); it != named_values_stack_.rend();
+       ++it) {
+    auto found = it->find(name);
+    if (found != it->end()) {
+      return found->second;
+    }
+  }
+  return nullptr;
+}
+
+void CodeGen::report_error(const StringT& message) {
+  errors_.emplace_back(message);
+}
+
+llvm::AllocaInst* CodeGen::create_entry_block_alloca(llvm::Function* func,
+                                                     llvm::Type* type,
+                                                     const StringT& name) {
+  llvm::IRBuilder<> tmp_builder(&func->getEntryBlock(),
+                                func->getEntryBlock().begin());
+  return tmp_builder.CreateAlloca(type, nullptr, name);
 }
 
 }  // namespace scy

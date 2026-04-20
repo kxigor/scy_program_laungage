@@ -15,9 +15,11 @@ struct SemanticResult {
 
 class SemanticAnalyzer {
  public:
+  /*=========================== API ============================*/
   SemanticResult analyze(const Program& program);
 
  private:
+  /*========================== Impls ===========================*/
   void visit_program(const Program& program);
   void visit_declaration(const Declaration& decl);
   void visit_function_decl(const FunctionDecl& func, SourceLocation loc);
@@ -46,6 +48,7 @@ class SemanticAnalyzer {
   void report_error(SemanticErrorKind kind, const StringT& message,
                     SourceLocation loc);
 
+  /*======================= Data fields ========================*/
   Scope* current_scope_{nullptr};
   UniquePtrT<Scope> global_scope_;
   VectorT<SemanticError> errors_;

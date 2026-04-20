@@ -83,7 +83,7 @@ void SemanticAnalyzer::visit_function_decl(const FunctionDecl& func,
     if (not current_scope_->define(func.params[i].name, std::move(param_sym))) {
       report_error(
           SemanticErrorKind::RedeclaredVariable,
-          "Duplicate parameter name '" + StringT(func.params[i].name) + "'",
+          std::format("Duplicate parameter name '{}'", func.params[i].name),
           {});
     }
   }
@@ -169,7 +169,7 @@ void SemanticAnalyzer::visit_var_decl_stmt(const VarDeclStmt& stmt,
   if (not current_scope_->define(stmt.name, std::move(sym))) {
     report_error(
         SemanticErrorKind::RedeclaredVariable,
-        "Variable '" + StringT(stmt.name) + "' already declared in this scope",
+        std::format("Variable '{}' already declared in this scope", stmt.name),
         loc);
   }
 }
@@ -207,7 +207,7 @@ void SemanticAnalyzer::visit_identifier_expr(const IdentifierExpr& expr,
   const auto* sym = current_scope_->resolve(expr.name);
   if (sym == nullptr) {
     report_error(SemanticErrorKind::UndeclaredVariable,
-                 "Use of undeclared identifier '" + StringT(expr.name) + "'",
+                 std::format("Use of undeclared identifier '{}'", expr.name),
                  loc);
   }
 }
@@ -227,7 +227,7 @@ void SemanticAnalyzer::visit_assign_expr(const AssignExpr& expr,
   if (sym == nullptr) {
     report_error(
         SemanticErrorKind::UndeclaredVariable,
-        "Assignment to undeclared variable '" + StringT(expr.name) + "'", loc);
+        std::format("Assignment to undeclared variable '{}'", expr.name), loc);
   }
 
   visit_expression(*expr.value);
@@ -238,7 +238,7 @@ void SemanticAnalyzer::visit_call_expr(const CallExpr& expr,
   const auto* sym = current_scope_->resolve(expr.callee);
   if (sym == nullptr) {
     report_error(SemanticErrorKind::UndeclaredFunction,
-                 "Call to undeclared function '" + StringT(expr.callee) + "'",
+                 std::format("Call to undeclared function '{}'", expr.callee),
                  loc);
   }
 
@@ -263,7 +263,7 @@ void SemanticAnalyzer::define_symbol(StringViewT name, Symbol symbol) {
   const SourceLocation kLoc = symbol.location;
   if (not current_scope_->define(name, std::move(symbol))) {
     report_error(SemanticErrorKind::RedeclaredVariable,
-                 "'" + StringT(name) + "' already declared in this scope",
+                 std::format("'{}' already declared in this scope", name),
                  kLoc);
   }
 }
