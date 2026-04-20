@@ -18,16 +18,7 @@ class CodeGen {
   /*================= Constructors/Destructors =================*/
   explicit CodeGen(const StringT& module_name = "scy_module");
 
-  CodeGen(const CodeGen& /*unused*/) = default;
-
-  CodeGen(CodeGen&& /*unused*/) = default;
-
   ~CodeGen() = default;
-
-  /*======================== Assignment ========================*/
-  CodeGen& operator=(const CodeGen& /*unused*/) = default;
-
-  CodeGen& operator=(CodeGen&& /*unused*/) = default;
 
   /*========================= Core API =========================*/
   [[nodiscard]] bool generate(const Program& program,
