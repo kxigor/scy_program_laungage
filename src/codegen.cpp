@@ -11,6 +11,7 @@
 #include <llvm/Support/raw_ostream.h>
 
 #include <cstdint>
+#include <format>
 #include <include/ast.hpp>
 #include <include/codegen.hpp>
 #include <include/config.hpp>

@@ -1,3 +1,4 @@
+#include <format>
 #include <include/ast.hpp>
 #include <include/config.hpp>
 #include <include/scope.hpp>

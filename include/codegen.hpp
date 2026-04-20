@@ -15,10 +15,8 @@ namespace scy {
 
 class CodeGen {
  public:
-  /*================= Constructors/Destructors =================*/
+  /*================= Constructors =================*/
   explicit CodeGen(const StringT& module_name = "scy_module");
-
-  ~CodeGen() = default;
 
   /*========================= Core API =========================*/
   [[nodiscard]] bool generate(const Program& program,
